@@ -313,6 +313,15 @@ Errors:
 
 Response: `Song` - the song deleted
 
+### Other Design Decisions
+
+- Each translation has its own scdb database, for scalability. 
+  The name of the database is `f'{language}-dump.scdb'`
+- The `user` records are in their own scdb database, for scalability.
+- Access to different databases is done concurrently, for more speed.
+- All business logic is put in appropriate services in the `services` folder
+- All API related logic is in the `api` package
+
 ## Acknowledgements
 
 - Century Publishing House Ltd published the version from which most of these hymns are got.
