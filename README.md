@@ -70,17 +70,32 @@ class Song(BaseModel):
 
 ### Main API Requests
 
-- Details - GET `/{language}/{number}?translations={language}&translations={language}`...
+#### Details - GET `/{language}/{number}?translations={language}&translations={language}`...
 
-  Access: Public
+Access: Public
   
-  Headers:
+Headers:
   
 ```python
 {"X-API-KEY": "some api key"}
 ```
+
+Params:
+
+  - `language` = the language for the given hymn
+  - `number` = the hymn number
+
+Query Params:
+
+  - `translations` = the list of other language translations to return for given song
+
+Errors:
+    
+  - 404 - Not Found if language-number does not exist
+  - 401 - Unauthorized if authorization token is not valid or was not supplied
+  - 429 - Too many requests if user makes too many requests in a given amount of time
   
-  Response:
+Response:
 
 ```python
 class SongDetail(BaseModel):
@@ -88,17 +103,33 @@ class SongDetail(BaseModel):
     translations: Dict[Language, Song]
 ```
 
-- List - GET `/{language}/?page={int}&limit={int}&translations={language}&translations={language}`...
+#### List - GET `/{language}/?page={int}&limit={int}&translations={language}&translations={language}`...
 
-  Access: Public
+Access: Public
 
-  Headers:
+Headers:
   
 ```python
 {"X-API-KEY": "some api key"}
 ```
 
-  Response:
+Params:
+
+  - `language` = the language for the given hymn
+  - `number` = the hymn number
+
+Query Params:
+
+  - `page` (default = 1) - the page of results to return for the paginated format used
+  - `limit` (default = 20) - the number of results per page to return for the paginated format used
+  - `translations` = the list of other language translations to return for given song
+
+Errors:
+    
+- 401 - Unauthorized if authorization token is not valid or was not supplied
+- 429 - Too many requests if user makes too many requests in a given amount of time
+
+Response:
 
 ```python
 """
@@ -115,22 +146,23 @@ class SongList(BaseModel):
     limit: int
 ```
 
-- Create - POST `/`
+#### Create - POST `/`
 
-  Access: Private Admin
+Access: Private Admin
 
-  Headers:
+Headers:
   
 ```python
 {"Authorization": "Bearer some api key"}
 ```
 
-  Errors:
-    - 409 - Conflict if language-number combination already exists
-    - 401 - Unauthorized if authorization token is not valid or was not supplied
-    - 400 - Bad Request if request passed is invalid
+Errors:
 
-  Request:
+  - 409 - Conflict if language-number combination already exists
+  - 401 - Unauthorized if authorization token is not valid or was not supplied
+  - 400 - Bad Request if request passed is invalid
+
+Request:
 
 ```python
 class CreateSongRequest(BaseModel):
@@ -141,24 +173,30 @@ class CreateSongRequest(BaseModel):
     lines: List[List[LineSection]]
 ```
 
-  Response: `Song`
+Response: `Song`
 
-- Update - PUT `/{language}/{number}`
+#### Update - PUT `/{language}/{number}`
 
-  Access: Private Admin
+Access: Private Admin
 
-  Headers:
+Headers:
   
 ```python
 {"Authorization": "Bearer some api key"}
 ```
 
-  Errors:
-    - 404 - Not Found if language-number does not exist
-    - 401 - Unauthorized if authorization token is not valid or was not supplied
-    - 400 - Bad Request if request passed is invalid
+Params:
 
-  Request:
+  - `language` = the language for the given hymn
+  - `number` = the hymn number
+
+Errors:
+
+  - 404 - Not Found if language-number does not exist
+  - 401 - Unauthorized if authorization token is not valid or was not supplied
+  - 400 - Bad Request if request passed is invalid
+  
+Request:
 
 ```python
 class UpdateSongRequest(BaseModel):
@@ -167,24 +205,25 @@ class UpdateSongRequest(BaseModel):
     lines: List[List[LineSection]]
 ```
 
-  Response: `Song`
+Response: `Song`
 
 
-- Delete - DELETE `/{language}/{number}`
+#### Delete - DELETE `/{language}/{number}`
 
-  Access: Private Admin
+Access: Private Admin
 
-  Headers:
+Headers:
   
 ```python
 {"Authorization": "Bearer some api key"}
 ```
 
-  Errors:
-    - 404 - Not Found if language-number does not exist
-    - 401 - Unauthorized if authorization token is not valid or was not supplied
+Errors:
+    
+- 404 - Not Found if language-number does not exist
+- 401 - Unauthorized if authorization token is not valid or was not supplied
 
-  Response: `Song` - the song deleted
+Response: `Song` - the song deleted
 
 ## Acknowledgements
 
