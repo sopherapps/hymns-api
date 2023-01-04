@@ -9,6 +9,7 @@ This is a general API that can host hymns/songs including their musical notation
  - Privately accessible WRITE-ONLY with need of a JWT auth token for admins only
  - Very fast, due to use of embedded document-oriented database
  - Can have multiple translations for each song
+ - CLI to do some devOps chores e.g. create new admin users etc.
 
 ## Contributing
 
@@ -23,6 +24,7 @@ When you are ready, look at the [CONTRIBUTIONS GUIDELINES](./CONTRIBUTING.md)
 
 - [Python v3.11+](https://python.org) - the programming language
 - [FastAPI](https://fastapi.tiangolo.com/) - web server
+- [Typer CLI](https://typer.tiangolo.com/typer-cli/) - for CLI commands
 - [py_scdb](https://github.com/sopherapps/py_scdb) - embedded database
 - [slowapi](https://pypi.org/project/slowapi/) - rate-limiting
 
@@ -68,7 +70,90 @@ class Song(BaseModel):
         return f"{self.language}-{self.number}"
 ```
 
+### Main CLI commands
+
+#### Run App
+
+```shell
+python manage.py run --port your-port --rate-limit-per-minute your-rate-limit-per-minute
+```
+
+Errors:
+
+  - port already in use 
+
+#### Create Admin User
+
+```shell
+python manage.py create_admin --email your-email --password your-password
+```
+
+Errors:
+
+  - email already exists [Creating new passwords is manual for now -- i.e. delete user first]
+
+#### Delete Admin User
+
+```shell
+python manage.py delete_admin --email your-email --password your-password
+```
+
+Errors:
+
+  - email does not exist
+
 ### Main API Requests
+
+#### Admin Login - POST `/login`
+
+Access: Public
+
+Errors:
+
+  - 401 - Conflict if email and password don't match
+  - 429 - Too many requests if user makes too many requests in a given amount of time
+  - 400 - Bad Request if request passed is invalid
+
+Request:
+
+```python
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+```
+
+Response:
+
+```python
+class LoginResponse(BaseModel):
+    access_token: str
+```
+
+
+#### Register - POST `/register`
+
+Access: Public
+
+Errors:
+
+  - 409 - Conflict if email already exists [Handling API key regeneration is manual for now]
+  - 429 - Too many requests if user makes too many requests in a given amount of time
+  - 400 - Bad Request if request passed is invalid
+
+Request:
+
+```python
+class RegistrationRequest(BaseModel):
+    email: str
+```
+
+Response:
+
+```python
+class RegistrationResponse(BaseModel):
+    api_key: str
+```
+
 
 #### Details - GET `/{language}/{number}?translations={language}&translations={language}`...
 
@@ -92,7 +177,7 @@ Query Params:
 Errors:
     
   - 404 - Not Found if language-number does not exist
-  - 401 - Unauthorized if authorization token is not valid or was not supplied
+  - 401 - Unauthorized if API key is not valid or was not supplied
   - 429 - Too many requests if user makes too many requests in a given amount of time
   
 Response:
@@ -126,7 +211,7 @@ Query Params:
 
 Errors:
     
-- 401 - Unauthorized if authorization token is not valid or was not supplied
+- 401 - Unauthorized if API Key is not valid or was not supplied
 - 429 - Too many requests if user makes too many requests in a given amount of time
 
 Response:
@@ -161,6 +246,7 @@ Errors:
   - 409 - Conflict if language-number combination already exists
   - 401 - Unauthorized if authorization token is not valid or was not supplied
   - 400 - Bad Request if request passed is invalid
+  - 429 - Too many requests if user makes too many requests in a given amount of time
 
 Request:
 
@@ -195,7 +281,8 @@ Errors:
   - 404 - Not Found if language-number does not exist
   - 401 - Unauthorized if authorization token is not valid or was not supplied
   - 400 - Bad Request if request passed is invalid
-  
+  - 429 - Too many requests if user makes too many requests in a given amount of time
+
 Request:
 
 ```python
@@ -220,8 +307,9 @@ Headers:
 
 Errors:
     
-- 404 - Not Found if language-number does not exist
-- 401 - Unauthorized if authorization token is not valid or was not supplied
+  - 404 - Not Found if language-number does not exist
+  - 401 - Unauthorized if authorization token is not valid or was not supplied
+  - 429 - Too many requests if user makes too many requests in a given amount of time
 
 Response: `Song` - the song deleted
 
