@@ -320,7 +320,12 @@ Response: `Song` - the song deleted
 - The `user` records are in their own scdb database, for scalability.
 - Access to different databases is done concurrently, for more speed.
 - All business logic is put in appropriate services in the `services` folder
-- All API related logic is in the `api` package
+- All API related logic is in the `api` package, entry point being `main.py` in root folder.
+- All CLI(command line interface) related logic is in the `cli` package, 
+  entry point being `manage.py` in root folder.
+- Any shared utility functions are found in the `utils` package or module in the package where
+  they are needed e.g. services can have its own `utils`, api can also have its own `utils`,
+  even the entire project can have its own `utils`.
 
 ## Acknowledgements
 
