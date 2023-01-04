@@ -326,6 +326,8 @@ Response: `Song` - the song deleted
 - Any shared utility functions are found in the `utils` package or module in the package where
   they are needed e.g. services can have its own `utils`, api can also have its own `utils`,
   even the entire project can have its own `utils`.
+- The `tests` package mirrors the folder structure followed by the project, 
+  but with `test_` prefixes on the module names.
 
 ## Acknowledgements
 
