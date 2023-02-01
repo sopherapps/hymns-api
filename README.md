@@ -185,7 +185,7 @@ Response:
 ```python
 class SongDetail(BaseModel):
     number: int 
-    translations: Dict[Language, Song]
+    translations: Dict[str, Song]
 ```
 
 #### List - GET `/{language}/?page={int}&limit={int}&translations={language}&translations={language}`...
