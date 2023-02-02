@@ -5,13 +5,17 @@ import funml as ml
 from services.config import (
     ServiceConfig,
 )
+from services.hymns.utils.delete import delete_from_one_store, delete_from_all_stores
+from services.hymns.utils.get import (
+    GetFromStoreArgs,
+    get_song_by_number as get_raw_song_by_number,
+    get_song_by_title as get_raw_song_by_title,
+)
+from services.hymns.utils.init import get_all_lang_stores, init_hymns_service
+from services.hymns.utils.save import save_song, save_lang_and_song
+from services.hymns.utils.search import query_store_by_title, SearchArgs
+from services.hymns.utils.shared import err_if_none
 
-import services.hymns.utils.init as init_utils
-import services.hymns.utils.save as save_utils
-import services.hymns.utils.delete as del_utils
-import services.hymns.utils.get as get_utils
-import services.hymns.utils.search as search_utils
-import services.hymns.utils.shared as shared_utils
 from services.utils import if_else, to_result
 
 if TYPE_CHECKING:
@@ -27,8 +31,8 @@ if TYPE_CHECKING:
 """Main Expressions"""
 initialize = (
     lambda conf: ml.val(conf)
-    >> init_utils.get_all_lang_stores
-    >> init_utils.init_hymns_service
+    >> get_all_lang_stores
+    >> init_hymns_service
     >> ml.execute()
 )  # type: Callable[[ServiceConfig], "HymnsService"]
 """Initializes the hymns service given the configuration"""
@@ -38,8 +42,8 @@ add_song = lambda args: (
     ml.val(args)
     >> if_else(
         check=args.is_lang_available,
-        do=save_utils.save_song,
-        else_do=save_utils.save_lang_and_song,
+        do=save_song,
+        else_do=save_lang_and_song,
     )
     >> to_result
     >> ml.execute()
@@ -50,8 +54,8 @@ add_song = lambda args: (
 delete_song = lambda args: (
     if_else(
         check=args.is_lang_defined,
-        do=del_utils.delete_from_one_store,
-        else_do=del_utils.delete_from_all_stores,
+        do=delete_from_one_store,
+        else_do=delete_from_all_stores,
     )
     >> to_result
     >> ml.execute()
@@ -60,13 +64,9 @@ delete_song = lambda args: (
 
 
 get_song_by_title = lambda args: (
-    ml.val(
-        get_utils.GetFromStoreArgs(
-            store=args.service.stores[args.language], title=args.title
-        )
-    )
-    >> get_utils.get_song_by_title
-    >> shared_utils.err_if_none(item=args.title)
+    ml.val(GetFromStoreArgs(store=args.service.stores[args.language], title=args.title))
+    >> get_raw_song_by_title
+    >> err_if_none(item=args.title)
     >> to_result
     >> ml.execute()
 )  # type: Callable[[GetSongByTitleArgs], Awaitable[ml.Result]]
@@ -75,12 +75,10 @@ get_song_by_title = lambda args: (
 
 get_song_by_number = lambda args: (
     ml.val(
-        get_utils.GetFromStoreArgs(
-            store=args.service.stores[args.language], number=args.number
-        )
+        GetFromStoreArgs(store=args.service.stores[args.language], number=args.number)
     )
-    >> get_utils.get_song_by_number
-    >> shared_utils.err_if_none(item=args.number)
+    >> get_raw_song_by_number
+    >> err_if_none(item=args.number)
     >> to_result
     >> ml.execute()
 )  # type: Callable[[GetSongByNumberArgs], Awaitable[ml.Result]]
@@ -89,14 +87,14 @@ get_song_by_number = lambda args: (
 
 query_song_by_title = lambda args: (
     ml.val(
-        search_utils.SearchArgs(
+        SearchArgs(
             store=args.service.stores[args.language],
             q=args.q,
             skip=args.skip,
             limit=args.limit,
         )
     )
-    >> search_utils.query_store_by_title
+    >> query_store_by_title
     >> to_result
     >> ml.execute()
 )  # type: Callable[[QuerySongByTitleArgs], Awaitable[ml.Result]]

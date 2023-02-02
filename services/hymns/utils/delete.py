@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, NamedTuple
 from services.hymns.errors import ValidationError, NotFoundError
 import funml as ml
 
+from .get import get_song_by_title_or_number, GetFromStoreArgs
 from ...utils import await_output
-import get as get_utils
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
@@ -48,10 +48,8 @@ async def delete_from_one_store(args: "DeleteSongArgs"):
     )
 
     args.validate()
-    song = await get_utils.get_song_by_title_or_number(
-        get_utils.GetFromStoreArgs(
-            store=args.store, title=args.title, number=args.number
-        )
+    song = await get_song_by_title_or_number(
+        GetFromStoreArgs(store=args.store, title=args.title, number=args.number)
     )
     if song is None:
         raise NotFoundError(f"song title: {args.title} or number: {args.number}")

@@ -4,8 +4,7 @@ from typing import NamedTuple, TYPE_CHECKING
 import funml as ml
 
 from services.utils import await_output
-import shared as shared_utils
-
+from .shared import convert_json_to_song
 
 if TYPE_CHECKING:
     from typing import Callable
@@ -20,7 +19,7 @@ query_store_by_title = lambda args: (
     ml.val(args)
     >> __search_by_title
     >> await_output
-    >> ml.imap(shared_utils.convert_json_to_song)
+    >> ml.imap(convert_json_to_song)
     >> ml.execute()
 )  # type: Callable[[SearchArgs], Awaitable[list[Song]]]
 """Gets a list of songs whose titles begin with the search term"""
