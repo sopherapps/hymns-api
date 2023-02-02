@@ -1,19 +1,9 @@
 """Contains the utility functions shared across services"""
 from collections import Awaitable
 from os import path
-from typing import Callable, Any, TypeVar
+from typing import Callable, Any
 
 import funml as ml
-
-"""
-Data
-"""
-_ROOT_FOLDER = path.dirname(path.dirname(path.abspath(__file__)))
-
-
-"""
-Primitive Expressions
-"""
 
 
 """
@@ -41,10 +31,10 @@ if_else = lambda check=unit_expn, do=unit_expn, else_do=unit_expn: ml.val(
 """A short cut to creating a conditional expression with only two branches"""
 
 
-from_data = lambda data: ml.val(
+new_pipeline_of = lambda data: ml.val(
     lambda *args: data
 )  # type: Callable[[Any], ml.types.Expression]
-"""Initializes a new pseudo pipeline for the passed data, dropping the data from before.
+"""Initializes a new pseudo pipeline for the passed data, discarding the data produced from any previous pipeline.
 
 This is especially useful when doing naturally-imperative work, but trying to maintain the
 declarative nature of FunML
@@ -67,6 +57,22 @@ def to_result(
     """
     try:
         res = func(*args, **kwargs)
+
+        # in case it is already a result, just return it
+        if isinstance(res, ml.Result):
+            return res
+
         return ml.Result.OK(res)
     except Exception as exp:
         return ml.Result.ERR(exp)
+
+
+"""
+Primitive Expressions
+"""
+
+
+"""
+Data
+"""
+_ROOT_FOLDER = path.dirname(path.dirname(path.abspath(__file__)))
