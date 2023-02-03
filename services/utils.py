@@ -1,5 +1,6 @@
 """Contains the utility functions shared across services"""
-from collections import Awaitable
+import asyncio
+from collections.abc import Awaitable
 from os import path
 from typing import Callable, Any
 
@@ -18,8 +19,6 @@ get_store_path = lambda name: path.join(
 unit_expn = ml.val(lambda v: v)  # type: Callable[[Any], Any]
 """An expression that just echoes its inputs"""
 
-await_output = lambda v: await v  # type: Callable[[Awaitable], Any]
-"""Awaits an awaitable"""
 
 if_else = lambda check=unit_expn, do=unit_expn, else_do=unit_expn: ml.val(
     lambda *args, **kwargs: (
@@ -67,9 +66,10 @@ def to_result(
         return ml.Result.ERR(exp)
 
 
-"""
-Primitive Expressions
-"""
+def await_output(v):
+    """Awaits an awaitable"""
+    loop = asyncio.get_running_loop()
+    return asyncio.run_coroutine_threadsafe(v, loop).result()
 
 
 """
