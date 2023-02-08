@@ -5,7 +5,6 @@ from services.hymns.errors import ValidationError, NotFoundError
 import funml as ml
 
 from .get import get_song_by_title_or_number, GetFromStoreArgs
-from ...utils import await_output
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
@@ -21,7 +20,6 @@ delete_from_all_stores = lambda args: (
                 DeleteFromStoreArgs(store=store, title=args.title, number=args.number)
             )
             >> delete_from_one_store
-            >> await_output
             >> ml.execute()
         )
     )

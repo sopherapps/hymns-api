@@ -3,7 +3,6 @@ from typing import NamedTuple, TYPE_CHECKING
 
 import funml as ml
 
-from services.utils import await_output
 from .shared import convert_json_to_song
 
 if TYPE_CHECKING:
@@ -16,11 +15,7 @@ if TYPE_CHECKING:
 Main Expressions
 """
 query_store_by_title = lambda args: (
-    ml.val(args)
-    >> __search_by_title
-    >> await_output
-    >> ml.imap(convert_json_to_song)
-    >> ml.execute()
+    ml.val(args) >> __search_by_title >> ml.imap(convert_json_to_song) >> ml.execute()
 )  # type: Callable[[SearchArgs], Awaitable[list[Song]]]
 """Gets a list of songs whose titles begin with the search term"""
 

@@ -8,7 +8,7 @@ from py_scdb import AsyncStore
 from pydantic import BaseModel
 import funml as ml
 
-from services.utils import get_store_path, await_output
+from services.utils import get_store_path
 
 
 """
@@ -23,11 +23,10 @@ save_service_config = lambda conf: _get_config_store().set(
 get_service_config = (
     lambda: ml.val(_config_key)
     >> _get_config_store().get
-    >> await_output
     >> json.loads
     >> (lambda v: ServiceConfig(**v))
     >> ml.execute()
-)  # type: Callable[[], ServiceConfig]
+)  # type: Callable[[], Awaitable[ServiceConfig]]
 """Retrieves the Service Config"""
 
 

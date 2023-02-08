@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import funml as ml
 
 from services.hymns.models import Song
-from services.utils import await_output, if_else
+from services.utils import if_else
 import shared as shared_utils
 
 if TYPE_CHECKING:
@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 get_song_by_title = lambda args: (
     ml.val(args.title)
     >> args.store.titles_store.get
-    >> await_output
     >> shared_utils.convert_json_to_song
     >> ml.execute()
 )  # type: Callable[[GetFromStoreArgs], Awaitable[Song]]
@@ -25,7 +24,6 @@ get_song_by_title = lambda args: (
 get_song_by_number = lambda args: (
     ml.val(args.number)
     >> args.store.numbers_store.get
-    >> await_output
     >> shared_utils.convert_json_to_song
     >> ml.execute()
 )  # type: Callable[[GetFromStoreArgs], Awaitable[Song]]
@@ -36,9 +34,8 @@ get_song_by_title_or_number = lambda args: (
     if_else(
         check=args.is_title_defined, do=get_song_by_title, else_do=get_song_by_number
     )
-    >> await_output
     >> ml.execute()
-)
+)  # type: Callable[[GetFromStoreArgs], Awaitable[Song]]
 """Gets a song by either title or number"""
 
 

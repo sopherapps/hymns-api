@@ -5,7 +5,7 @@ import funml as ml
 
 from services.config import add_new_language
 from services.hymns.models import Song
-from services.utils import await_output, new_pipeline_of
+from services.utils import new_pipeline_of
 
 if TYPE_CHECKING:
     from typing import Callable
@@ -21,12 +21,10 @@ save_song = lambda args: (
         SaveToStoreArgs(store=args.service.stores[args.song.language], song=args.song)
     )
     >> save_to_titles_store
-    >> await_output
     >> new_pipeline_of(
         SaveToStoreArgs(store=args.service.stores[args.song.language], song=args.song)
     )
     >> save_to_numbers_store
-    >> await_output
     >> ml.execute()
 )  # type: Callable[[AddSongArgs], Awaitable[None]]
 """Saves the given song in the language store, both in the numbers and in the titles store"""
@@ -34,10 +32,8 @@ save_song = lambda args: (
 save_lang_and_song = lambda args: (
     new_pipeline_of(args.song.language)
     >> add_new_language
-    >> await_output
     >> new_pipeline_of(args)
     >> save_song
-    >> await_output
     >> ml.execute()
 )  # type: Callable[[AddSongArgs], Awaitable[None]]
 """Save both language and song"""

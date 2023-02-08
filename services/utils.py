@@ -1,5 +1,4 @@
 """Contains the utility functions shared across services"""
-import asyncio
 from collections.abc import Awaitable
 from os import path
 from typing import Callable, Any
@@ -64,12 +63,6 @@ def to_result(
         return ml.Result.OK(res)
     except Exception as exp:
         return ml.Result.ERR(exp)
-
-
-def await_output(v):
-    """Awaits an awaitable"""
-    loop = asyncio.get_running_loop()
-    return asyncio.run_coroutine_threadsafe(v, loop).result()
 
 
 """
