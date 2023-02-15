@@ -1,18 +1,21 @@
 """Contains the utility functions shared across services"""
-from collections.abc import Awaitable
 from os import path
-from typing import Callable, Any
+from typing import Union
 
 import funml as ml
 
 
+from os import PathLike
+from collections.abc import Awaitable
+from typing import Callable, Any
+
 """
 Main Expressions
 """
-get_store_path = lambda name: path.join(
-    _ROOT_FOLDER, name
-)  # type: Callable[[str], str]
-"""Gets the path to the store"""
+get_store_path = lambda root_path, name: path.join(
+    root_path, name
+)  # type: Callable[[bytes | PathLike[bytes], str], str]
+"""Gets the path to the store given a root path"""
 
 
 unit_expn = ml.val(lambda v: v)  # type: Callable[[Any], Any]
@@ -41,7 +44,7 @@ declarative nature of FunML
 
 def to_result(
     func: Callable, *args: Any, **kwargs: Any
-) -> ml.Result | Awaitable[ml.Result]:
+) -> Union[ml.Result, Awaitable[ml.Result]]:
     """Wraps a callable in an ml.Result
 
     Args:
@@ -63,9 +66,3 @@ def to_result(
         return ml.Result.OK(res)
     except Exception as exp:
         return ml.Result.ERR(exp)
-
-
-"""
-Data
-"""
-_ROOT_FOLDER = path.dirname(path.dirname(path.abspath(__file__)))

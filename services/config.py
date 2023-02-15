@@ -1,94 +1,112 @@
 """Handles the configuration of the entire app"""
+from __future__ import annotations
 import json
-from collections import Awaitable
-from dataclasses import asdict
-from typing import Callable
+from typing import TYPE_CHECKING
 
+from funml import to_dict
 from py_scdb import AsyncStore
-from pydantic import BaseModel
 import funml as ml
 
 from services.utils import get_store_path
 
-
-"""
-Main Expressions
-"""
-save_service_config = lambda conf: _get_config_store().set(
-    _config_key, conf.json()
-)  # type: Callable[[ServiceConfig], Awaitable[None]]
-"""Saves service config"""
+if TYPE_CHECKING:
+    from os import PathLike
 
 
-get_service_config = (
-    lambda: ml.val(_config_key)
-    >> _get_config_store().get
-    >> json.loads
-    >> (lambda v: ServiceConfig(**v))
-    >> ml.execute()
-)  # type: Callable[[], Awaitable[ServiceConfig]]
-"""Retrieves the Service Config"""
+async def save_service_config(
+    root_path: str | bytes | PathLike[bytes], conf: ServiceConfig
+):
+    """Saves service config.
+
+    Args:
+        root_path: the path to the root folder where the database is to be initialized or is found
+        conf: the ServiceConfig object to save to the database
+    """
+    config_store = _get_config_store(root_path)
+    key = _config_key
+    value = _to_json(conf)
+    await config_store.set(key, value)
 
 
-_append_lang_on_service_config = lambda lang: lambda conf: ServiceConfig(
-    **conf.dict(), languages=[*conf.languages, lang]
-)  # type: Callable[[ServiceConfig, str], Callable[[ServiceConfig], ServiceConfig]]
-"""Immutably appends a language to the languages of the service config"""
+def _to_json(value: ml.Record) -> str:
+    """Converts an ml record to a JSON string.
+
+    Args:
+        value: the record to convert to a JSON string
+
+    Returns:
+        the record as a JSON string
+    """
+    return json.dumps(to_dict(value))
 
 
-add_new_language = (
-    lambda lang: ml.val(get_service_config())
-    >> _append_lang_on_service_config(lang)
-    >> save_service_config
-    >> ml.execute()
-)  # type: Callable[[str], Awaitable[None]]
-"""Adds a new language to the service config, persisting it to file."""
+async def get_service_config(
+    root_path: str | bytes | PathLike[bytes],
+) -> "ServiceConfig":
+    """Retrieves the Service Config from the database at the given root_path.
+
+    Args:
+        root_path: the path to the root folder where the database is found
+
+    Returns:
+        the service config object found at the given path
+    """
+    config_store = _get_config_store(root_path)
+    config_as_str = await config_store.get(_config_key)
+    config_as_dict = json.loads(config_as_str)
+    return ServiceConfig(**config_as_dict)
 
 
-get_titles_store = lambda lang: (
-    ml.val(f"{lang}-title")
-    >> _get_db_config
-    >> asdict
-    >> _async_store_from_dict
-    >> ml.execute()
-)  # type: Callable[[str], AsyncStore]
-"""Gets the AsyncStore for the given language where the key is the title"""
+async def add_new_language(root_path: str | bytes | PathLike[bytes], lang: str):
+    """Adds a new language to the service config, persisting it to file."""
+    conf = await get_service_config(root_path)
+    conf_as_dict = to_dict(conf)
+    conf_as_dict["languages"] = [*conf.languages, lang]
+    new_conf = ServiceConfig(**conf_as_dict)
+    await save_service_config(root_path, conf=new_conf)
 
 
-get_numbers_store = lambda lang: (
-    ml.val(f"{lang}-number")
-    >> _get_db_config
-    >> asdict
-    >> _async_store_from_dict
-    >> ml.execute()
-)  # type: Callable[[str], AsyncStore]
-"""Gets the AsyncStore for the given language where the key is the number"""
+async def get_titles_store(root_path: str | bytes | PathLike[bytes], lang: str):
+    """Gets the AsyncStore for hymns of the given language where the keys are titles"""
+    conf = await _get_db_config(root_path, name=f"{lang}-title")
+    conf_as_dict = to_dict(conf)
+    return AsyncStore(**conf_as_dict)
+
+
+async def get_numbers_store(root_path: str | bytes | PathLike[bytes], lang: str):
+    """Gets the AsyncStore for hymns of the given language where the keys are numbers"""
+    conf = await _get_db_config(root_path, name=f"{lang}-number")
+    conf_as_dict = to_dict(conf)
+    return AsyncStore(**conf_as_dict)
 
 
 """
 Primitive Expressions
 """
-_async_store_from_dict = ml.val(
-    lambda v: AsyncStore(**v)
-)  # type: Callable[[dict], AsyncStore]
-"""Gets AsyncStore given a dictionary of arguments"""
 
 
-_get_db_config = lambda name: DbConfig(
-    store_path=get_store_path(name),
-    is_search_enabled=True,
-    **_service_db_config.lang_db_config,
-)  # type: Callable[[str], DbConfig]
-"""Gets the DbConfig for a usual database given the name of the database"""
+async def _get_db_config(
+    root_path: str | bytes | PathLike[bytes], name: str
+) -> DbConfig:
+    """Gets the DbConfig for a usual database given the name of the database"""
+    store_path = get_store_path(root_path, name)
+    service_conf = await get_service_config(root_path)
+    return DbConfig(
+        store_path=store_path,
+        is_search_enabled=True,
+        max_keys=service_conf.max_keys,
+        redundant_blocks=service_conf.redundant_blocks,
+        pool_capacity=service_conf.pool_capacity,
+        compaction_interval=service_conf.compaction_interval,
+    )
 
 
-_get_config_store = (
-    lambda: ml.val(_service_db_config)
-    >> asdict
-    >> _async_store_from_dict
-    >> ml.execute()
-)  # type: Callable[[], AsyncStore]
-"""Gets the persistent store for the configuration of the service"""
+def _get_config_store(root_path: str | bytes | PathLike[bytes]) -> AsyncStore:
+    """Gets the persistent store for the configuration of the service"""
+    store_path = get_store_path(root_path, _config_key)
+    conf = DbConfig(store_path=store_path)
+    conf_as_dict = to_dict(conf)
+    return AsyncStore(**conf_as_dict)
 
 
 """
@@ -97,7 +115,7 @@ Data Types
 
 
 @ml.record
-class ServiceConfig(BaseModel):
+class ServiceConfig:
     """The configuration for the entire service"""
 
     # Db Config
@@ -109,39 +127,20 @@ class ServiceConfig(BaseModel):
     # General
     languages: list[str] = []
 
-    @property
-    def lang_db_config(self):
-        """the configuration specific to language dbs"""
-        return dict(
-            max_keys=self.max_keys,
-            redundant_blocks=self.redundant_blocks,
-            pool_capacity=self.pool_capacity,
-            compaction_interval=self.compaction_interval,
-        )
-
 
 @ml.record
 class DbConfig:
     store_path: str
-    max_keys: int | None = None
-    redundant_blocks: int | None = None
-    pool_capacity: int | None = None
-    compaction_interval: int | None = None
+    max_keys: int | None = 1000
+    redundant_blocks: int | None = 1
+    pool_capacity: int | None = 2
+    compaction_interval: int | None = 3600
     is_search_enabled: bool = False
 
 
 """
 Data
 """
-_service_db_config = DbConfig(
-    store_path=get_store_path("config"),
-    max_keys=1000,
-    redundant_blocks=1,
-    pool_capacity=2,
-    compaction_interval=3600,
-    is_search_enabled=False,
-)
-"""The configuration for the db that keeps the service config"""
 
 _config_key = "config"
 """The database key for service config"""

@@ -18,7 +18,7 @@ _ROOT_FOLDER_PATH = os.path.dirname(
 
 
 def test_get_store_path():
-    """Returns the path to the store"""
+    """Returns the path to the store given root path"""
     test_data = {
         "languages": os.path.join(_ROOT_FOLDER_PATH, "languages"),
         "hymns": os.path.join(_ROOT_FOLDER_PATH, "hymns"),
@@ -26,7 +26,7 @@ def test_get_store_path():
     }
 
     for k, v in test_data.items():
-        assert get_store_path(k) == v
+        assert get_store_path(_ROOT_FOLDER_PATH, k) == v
 
 
 def test_unit_expn():
