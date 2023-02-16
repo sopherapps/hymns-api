@@ -71,11 +71,6 @@ async def get_numbers_store(root_path: str | bytes | PathLike[bytes], lang: str)
     return AsyncStore(**conf_as_dict)
 
 
-"""
-Primitive Expressions
-"""
-
-
 async def _get_db_config(
     root_path: str | bytes | PathLike[bytes], name: str
 ) -> DbConfig:
