@@ -1,43 +1,45 @@
 """Utility functions for handling search operations"""
-from typing import NamedTuple, TYPE_CHECKING
-
-import funml as ml
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
 from .shared import convert_json_to_song
 
 if TYPE_CHECKING:
-    from typing import Callable
-    from collections import Awaitable
     from ..models import Song
     from ..data_types import LanguageStore
 
-"""
-Main Expressions
-"""
-query_store_by_title = lambda args: (
-    ml.val(args) >> __search_by_title >> ml.imap(convert_json_to_song) >> ml.execute()
-)  # type: Callable[[SearchArgs], Awaitable[list[Song]]]
-"""Gets a list of songs whose titles begin with the search term"""
+
+async def query_store_by_title(
+    store: "LanguageStore", q: str, skip: int | None, limit: int | None
+) -> list[Song]:
+    """Gets a list of songs whose titles begin with the search term.
+
+    Args:
+        store: the LanguageStore where the songs are found
+        q: the search term
+        skip: the number of matching items to skip before starting to return
+        limit: the maximum number of items to return at a go
+
+    Returns:
+        a list of matching songs for the given search term in the given store
+    """
+    payload = await store.titles_store.search(term=q, skip=skip, limit=limit)
+    return [convert_json_to_song(item) for _, item in payload]
 
 
-"""
-Primitive Expressions
-"""
-__search_by_title = lambda args: args.store.titles_store.search(
-    term=args.q, skip=args.skip, limit=args.limit
-)  # type: Callable[[SearchArgs], Awaitable[list[str]]]
-"""Searches the store by title for the given `q`"""
+async def query_store_by_number(
+    store: "LanguageStore", q: int, skip: int | None, limit: int | None
+) -> list[Song]:
+    """Gets a list of songs whose song numbers begin with the search term.
 
+    Args:
+        store: the LanguageStore where the songs are found
+        q: the search term
+        skip: the number of matching items to skip before starting to return
+        limit: the maximum number of items to return at a go
 
-"""
-Data Types
-"""
-
-
-class SearchArgs(NamedTuple):
-    """The type of parameter used when searching for a given term."""
-
-    store: "LanguageStore"
-    q: str
-    skip: int
-    limit: int
+    Returns:
+        a list of matching songs for the given search term in the given store
+    """
+    payload = await store.numbers_store.search(term=f"{q}", skip=skip, limit=limit)
+    return [convert_json_to_song(item) for _, item in payload]

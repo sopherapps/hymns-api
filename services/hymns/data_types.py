@@ -1,10 +1,10 @@
 """Data Types used in the hymns service"""
-from typing import NamedTuple, Optional
+from __future__ import annotations
+
+from os import PathLike
 
 import funml as ml
 from py_scdb import AsyncStore
-
-from services.hymns.models import Song
 
 
 @ml.record
@@ -19,6 +19,7 @@ class LanguageStore:
         numbers_store: the AsyncStore whose keys are the song numbers
     """
 
+    language: str
     titles_store: AsyncStore
     numbers_store: AsyncStore
 
@@ -28,53 +29,4 @@ class HymnsService:
     """The Service for storing and manipulating hymns"""
 
     stores: dict[str, LanguageStore] = {}
-
-
-class AddSongArgs(NamedTuple):
-    """The type of parameter used when adding songs"""
-
-    service: "HymnsService"
-    song: Song
-
-    def is_lang_available(self, *args) -> bool:
-        """Checks whether the song language is available in the HymnsService"""
-        return self.song.language in self.service.stores
-
-
-class DeleteSongArgs(NamedTuple):
-    """The type of parameter used when deleting songs"""
-
-    service: "HymnsService"
-    language: Optional[str] = None
-    title: Optional[str] = None
-    number: Optional[int] = None
-
-    def is_lang_defined(self, *args) -> bool:
-        """Checks Whether the language is defined or not"""
-        return self.language is not None
-
-
-class GetSongByTitleArgs(NamedTuple):
-    """The type of parameter used when getting songs by title"""
-
-    service: "HymnsService"
-    language: str
-    title: str
-
-
-class GetSongByNumberArgs(NamedTuple):
-    """The type of parameter used when getting songs by number"""
-
-    service: "HymnsService"
-    language: str
-    number: int
-
-
-class QuerySongByTitleArgs(NamedTuple):
-    """The type of parameter used when searching for song title's beginning with."""
-
-    service: "HymnsService"
-    language: str
-    q: str
-    skip: int = 0
-    limit: int = 20
+    root_path: bytes | PathLike[bytes] | str

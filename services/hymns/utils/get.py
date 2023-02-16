@@ -1,56 +1,72 @@
 """Utility functions for handling get operations"""
-from typing import TYPE_CHECKING, NamedTuple
-import funml as ml
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
 from services.hymns.models import Song
-from services.utils import if_else
 import shared as shared_utils
+from ..errors import ValidationError, NotFoundError
 
 if TYPE_CHECKING:
-    from typing import Callable, Optional
-    from collections import Awaitable
     from ..data_types import LanguageStore
 
 
-get_song_by_title = lambda args: (
-    ml.val(args.title)
-    >> args.store.titles_store.get
-    >> shared_utils.convert_json_to_song
-    >> ml.execute()
-)  # type: Callable[[GetFromStoreArgs], Awaitable[Song]]
-"""Gets a given song by title from the given language store"""
+async def get_song_by_title(store: "LanguageStore", title: str) -> Song:
+    """Gets a given song by number from the given language store.
+
+    Args:
+        store: the LanguageStore in which the songs are found
+        title: the song title of the song to retrieve
+
+    Returns:
+        the Song whose title is the `title` provided
+    """
+    payload = await store.titles_store.get(title)
+
+    if payload is None:
+        raise NotFoundError(
+            f"song of title: '{title}' not found for language: '{store.language}'"
+        )
+
+    song = shared_utils.convert_json_to_song(payload)
+    return song
 
 
-get_song_by_number = lambda args: (
-    ml.val(args.number)
-    >> args.store.numbers_store.get
-    >> shared_utils.convert_json_to_song
-    >> ml.execute()
-)  # type: Callable[[GetFromStoreArgs], Awaitable[Song]]
-"""Gets a given song by number from the given language store"""
+async def get_song_by_number(store: "LanguageStore", number: int) -> Song:
+    """Gets a given song by number from the given language store.
+
+    Args:
+        store: the LanguageStore in which the songs are found
+        number: the song number of the song to retrieve
+
+    Returns:
+        the Song whose song number is the `number` provided
+    """
+    payload = await store.numbers_store.get(f"{number}")
+    song = shared_utils.convert_json_to_song(payload)
+    return song
 
 
-get_song_by_title_or_number = lambda args: (
-    if_else(
-        check=args.is_title_defined, do=get_song_by_title, else_do=get_song_by_number
-    )
-    >> ml.execute()
-)  # type: Callable[[GetFromStoreArgs], Awaitable[Song]]
-"""Gets a song by either title or number"""
+async def get_song_by_title_or_number(
+    store: "LanguageStore", title: str | None = None, number: int | None = None
+) -> Song:
+    """Gets a song by either title or number.
 
+    If both title and number are provided, only the title is considered.
 
-"""
-Data Types
-"""
+    Args:
+        store: the LanguageStore from which to get the song
+        title: the title of the song
+        number: the song number of the song
 
+    Returns:
+        the Song of the given title or number.
 
-class GetFromStoreArgs(NamedTuple):
-    """The type of parameter used when getting from store"""
+    Raises:
+        ValidationError: no title or number provided to identify the song
+    """
+    if title is not None:
+        return await get_song_by_title(store, title=title)
+    elif number is not None:
+        return await get_song_by_number(store, number=number)
 
-    store: "LanguageStore"
-    title: Optional[str] = None
-    number: Optional[int] = None
-
-    def is_title_defined(self, *args) -> bool:
-        """Checks whether the title is defined"""
-        return self.title is not None
+    raise ValidationError("no title or number provided to identify the song")

@@ -1,66 +1,58 @@
 """Utility functions and types for handling save to database operations"""
-from typing import TYPE_CHECKING, NamedTuple
-
-import funml as ml
+from typing import TYPE_CHECKING
 
 from services.config import add_new_language
+from services.utils import record_to_json
 from services.hymns.models import Song
-from services.utils import new_pipeline_of
+from .init import initialize_language_store
 
 if TYPE_CHECKING:
-    from typing import Callable
-    from collections import Awaitable
-    from ..data_types import AddSongArgs, LanguageStore
+    from ..data_types import LanguageStore, HymnsService
 
 
-"""
-Main Expressions
-"""
-save_song = lambda args: (
-    ml.val(
-        SaveToStoreArgs(store=args.service.stores[args.song.language], song=args.song)
-    )
-    >> save_to_titles_store
-    >> new_pipeline_of(
-        SaveToStoreArgs(store=args.service.stores[args.song.language], song=args.song)
-    )
-    >> save_to_numbers_store
-    >> ml.execute()
-)  # type: Callable[[AddSongArgs], Awaitable[None]]
-"""Saves the given song in the language store, both in the numbers and in the titles store"""
+async def save_song(service: "HymnsService", song: Song) -> "HymnsService":
+    """Saves the given song in the language store, both by the song number and song title.
 
-save_lang_and_song = lambda args: (
-    new_pipeline_of(args.song.language)
-    >> add_new_language
-    >> new_pipeline_of(args)
-    >> save_song
-    >> ml.execute()
-)  # type: Callable[[AddSongArgs], Awaitable[None]]
-"""Save both language and song"""
+    Args:
+        service: the HymnsService instance to add song to
+        song: the Song to add to the HymnsService
+
+    Returns:
+        The updated HymnsService
+    """
+    if song.language not in service.stores:
+        service = await _save_new_language(service, lang=song.language)
+
+    store = service.stores[song.language]
+    await _save_to_titles_store(store, song=song)
+    await _save_to_numbers_store(store, song=song)
+
+    return service
 
 
-"""
-Primitive Expressions
-"""
-save_to_titles_store = lambda args: args.store.titles_store.set(
-    args.song.title, args.song.json()
-)  # type: Callable[[SaveToStoreArgs], Awaitable[None]]
-"""Saves song in the async store that has song titles as keys"""
+async def _save_new_language(service: "HymnsService", lang: str) -> "HymnsService":
+    """Saves the new language to the service and returns the updated service.
+
+    Args:
+        service: the HymnsService to which new language is to be added
+        lang: the new language being added
+
+    Returns:
+        the updated HymnsService
+    """
+    await add_new_language(service.root_path, lang=lang)
+    store = await initialize_language_store(service.root_path, lang=lang)
+    service.stores[lang] = store
+    return service
 
 
-save_to_numbers_store = lambda args: args.store.numbers_store.set(
-    args.song.number, args.song.json()
-)  # type: Callable[[SaveToStoreArgs], Awaitable[None]]
-"""Saves song in the async store that has song number as keys"""
+def _save_to_titles_store(store: LanguageStore, song: Song):
+    """Saves song in language store by song title"""
+    value = record_to_json(song)
+    return store.titles_store.set(song.title, v=value)
 
 
-"""
-Data Types
-"""
-
-
-class SaveToStoreArgs(NamedTuple):
-    """The type of parameter used when saving to store"""
-
-    store: "LanguageStore"
-    song: Song
+def _save_to_numbers_store(store: LanguageStore, song: Song):
+    """Saves song in language store by song number"""
+    value = record_to_json(song)
+    return store.titles_store.set(f"{song.number}", v=value)

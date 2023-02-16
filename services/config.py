@@ -7,10 +7,13 @@ from funml import to_dict
 from py_scdb import AsyncStore
 import funml as ml
 
-from services.utils import get_store_path
+from services.utils import get_store_path, record_to_json
 
 if TYPE_CHECKING:
     from os import PathLike
+
+
+_config_key = "config"  # The database key for service config
 
 
 async def save_service_config(
@@ -24,20 +27,8 @@ async def save_service_config(
     """
     config_store = _get_config_store(root_path)
     key = _config_key
-    value = _to_json(conf)
+    value = record_to_json(conf)
     await config_store.set(key, value)
-
-
-def _to_json(value: ml.Record) -> str:
-    """Converts an ml record to a JSON string.
-
-    Args:
-        value: the record to convert to a JSON string
-
-    Returns:
-        the record as a JSON string
-    """
-    return json.dumps(to_dict(value))
 
 
 async def get_service_config(
@@ -109,11 +100,6 @@ def _get_config_store(root_path: str | bytes | PathLike[bytes]) -> AsyncStore:
     return AsyncStore(**conf_as_dict)
 
 
-"""
-Data Types
-"""
-
-
 @ml.record
 class ServiceConfig:
     """The configuration for the entire service"""
@@ -136,11 +122,3 @@ class DbConfig:
     pool_capacity: int | None = 2
     compaction_interval: int | None = 3600
     is_search_enabled: bool = False
-
-
-"""
-Data
-"""
-
-_config_key = "config"
-"""The database key for service config"""

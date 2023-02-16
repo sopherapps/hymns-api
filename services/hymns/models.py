@@ -1,18 +1,12 @@
 """Contains the models for the hymns service
 """
-from typing import List, Callable
+from __future__ import annotations
+from typing import List
 import funml as ml
-
-from pydantic import BaseModel
-
-
-"""
-Data Types
-"""
 
 
 @ml.record
-class Song(BaseModel):
+class Song:
     number: int
     language: str
     title: str
@@ -48,38 +42,15 @@ class MusicalNote(ml.Enum):
 
 
 @ml.record
-class LineSection(BaseModel):
+class LineSection:
     note: MusicalNote
     words: str
 
 
-"""
-Main Expressions
-"""
-note_to_str: Callable[["MusicalNote"], str] = (
-    ml.match()
-    .case(MusicalNote.C_MAJOR, do=ml.val("C"))
-    .case(MusicalNote.C_MINOR, do=ml.val("Cm"))
-    .case(MusicalNote.C_SHARP_MAJOR, do=ml.val("C#"))
-    .case(MusicalNote.C_SHARP_MINOR, do=ml.val("C#m"))
-    .case(MusicalNote.D_MAJOR, do=ml.val("D"))
-    .case(MusicalNote.D_SHARP_MAJOR, do=ml.val("D#"))
-    .case(MusicalNote.D_SHARP_MINOR, do=ml.val("D#m"))
-    .case(MusicalNote.E_MAJOR, do=ml.val("E"))
-    .case(MusicalNote.E_MINOR, do=ml.val("Em"))
-    .case(MusicalNote.F_MAJOR, do=ml.val("F"))
-    .case(MusicalNote.F_MINOR, do=ml.val("Fm"))
-    .case(MusicalNote.F_SHARP_MAJOR, do=ml.val("F#"))
-    .case(MusicalNote.F_SHARP_MINOR, do=ml.val("F#m"))
-    .case(MusicalNote.G_MAJOR, do=ml.val("G"))
-    .case(MusicalNote.G_MINOR, do=ml.val("Gm"))
-    .case(MusicalNote.G_SHARP_MAJOR, do=ml.val("G#"))
-    .case(MusicalNote.G_SHARP_MINOR, do=ml.val("G#m"))
-    .case(MusicalNote.A_MAJOR, do=ml.val("A"))
-    .case(MusicalNote.A_MINOR, do=ml.val("Am"))
-    .case(MusicalNote.A_SHARP_MAJOR, do=ml.val("A#"))
-    .case(MusicalNote.A_SHARP_MINOR, do=ml.val("A#m"))
-    .case(MusicalNote.B_MAJOR, do=ml.val("B"))
-    .case(MusicalNote.B_MINOR, do=ml.val("Bm"))
-)
-"""Converts a MusicalNote to a string"""
+@ml.record
+class PaginatedResponse:
+    """A response that is returned when paginated"""
+
+    skip: int | None = None
+    limit: int | None = None
+    data: list[Song] = []

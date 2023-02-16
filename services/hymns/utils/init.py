@@ -1,32 +1,49 @@
 """Utility functions for handling initializing the service"""
-import funml as ml
+from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from os import PathLike
+
+from typing import TYPE_CHECKING, Dict
 
 from services.config import get_numbers_store, get_titles_store
-from services.hymns.data_types import LanguageStore, HymnsService
+from services.hymns.data_types import LanguageStore
 
 if TYPE_CHECKING:
-    from typing import Callable
     from ...config import ServiceConfig
 
-get_lang_store = lambda v: LanguageStore(
-    numbers_store=get_numbers_store(v),
-    titles_store=get_titles_store(v),
-)  # type: Callable[[str], LanguageStore]
-"""Gets the LanguageStore for the given language"""
+
+async def initialize_language_stores(
+    root_path: bytes | PathLike[bytes] | str, conf: ServiceConfig
+) -> Dict[str, LanguageStore]:
+    """Initializes the dictionary of languages and their stores in the config.
+
+    Args:
+        root_path: the path to where the store is to be found
+        conf: the ServiceConfig for the current service
+
+    Returns:
+        a dictionary showing the languages and their stores
+    """
+    return {
+        lang: (await initialize_language_store(root_path, lang))
+        for lang in conf.languages
+    }
 
 
-get_all_lang_stores = lambda conf: (
-    ml.val(conf.languages)
-    >> ml.imap(lambda lang: (lang, get_lang_store(lang)))
-    >> ml.ireduce(lambda acc, curr: {**acc, curr[0]: curr[1]}, initial={})
-    >> ml.execute()
-)  # type: Callable[[ServiceConfig], dict[str, LanguageStore]]
-"""Gets the dictionary of languages and their stores in the config"""
+async def initialize_language_store(
+    root_path: bytes | PathLike[bytes] | str, lang: str
+) -> LanguageStore:
+    """Initializes the LanguageStore for the given language.
 
+    Args:
+        root_path: the path where the stores are to be found
+        lang: the language name whose store is to be retrieved
 
-init_hymns_service = lambda stores: HymnsService(
-    stores=stores
-)  # type: Callable[[dict[str, LanguageStore]], "HymnsService"]
-"""Initializes a new hymns service given a dictionary of language stores"""
+    Returns:
+        the LanguageStore that corresponds to the given language
+    """
+    numbers_store = await get_numbers_store(root_path, lang=lang)
+    titles_store = await get_titles_store(root_path, lang=lang)
+    return LanguageStore(
+        numbers_store=numbers_store, titles_store=titles_store, language=lang
+    )

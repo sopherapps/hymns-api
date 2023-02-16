@@ -2,21 +2,36 @@
 import json
 from typing import TYPE_CHECKING
 
-import funml as ml
-
 from services.hymns.errors import NotFoundError
 from services.hymns.models import Song
-from services.utils import if_else
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from ..data_types import HymnsService
 
-convert_json_to_song = lambda v: Song(**json.loads(v))  # type: Callable[[dict], Song]
-"""Converts a dict into a Song"""
 
-err_if_none = lambda item: if_else(
-    check=(lambda arg: arg is None),
-    do=lambda arg: ml.Result.ERR(NotFoundError(item)),
-    else_do=lambda arg: ml.Result.OK(arg),
-)
-"""Creates an expression that returns an error if argument is None or else returns the value an ml.Result.OK """
+def convert_json_to_song(data: str) -> Song:
+    """Converts a JSON string into a Song.
+
+    Args:
+        data: the JSON representation of the song
+
+    Returns:
+        the Song represented by `data`
+    """
+    return Song(**json.loads(data))
+
+
+def get_language_store(service: "HymnsService", lang: str):
+    """Gets the language store for the given language from the service
+
+    Args:
+        service: the HymnsService from which the language store is to be got
+        lang: the language of the store to be got
+
+    Raises:
+        NotFoundError: no such language found
+    """
+    try:
+        return service.stores[lang]
+    except KeyError:
+        raise NotFoundError(f"no such language as {lang}")
