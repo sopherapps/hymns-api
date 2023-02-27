@@ -6,7 +6,7 @@ from os import PathLike
 from typing import TYPE_CHECKING, Dict
 
 from services.config import get_numbers_store, get_titles_store
-from services.hymns.data_types import LanguageStore
+from services.hymns.types import LanguageStore
 
 if TYPE_CHECKING:
     from ...config import ServiceConfig

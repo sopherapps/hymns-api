@@ -7,7 +7,7 @@ from services.hymns.errors import ValidationError, NotFoundError
 from .get import get_song_by_title_or_number
 
 if TYPE_CHECKING:
-    from ..data_types import LanguageStore, HymnsService
+    from ..types import LanguageStore, HymnsService
     from ..models import Song
 
 

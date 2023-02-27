@@ -19,12 +19,18 @@ from services.hymns.utils.search import (
 from services.hymns.utils.shared import get_language_store
 from services.hymns.models import Song, PaginatedResponse
 
-if TYPE_CHECKING:
-    from data_types import HymnsService
+from .types import HymnsService
 
 
-async def initialize(root_path: bytes | PathLike[bytes] | str) -> "HymnsService":
-    """Initializes the hymns service given the configuration"""
+async def initialize(root_path: bytes | str) -> "HymnsService":
+    """Initializes the hymns service given the configuration.
+
+    Args:
+        root_path: the path to the stores for the hymns service
+
+    Returns:
+        the HymnsService whose configuration is at the root_path
+    """
     conf = await get_service_config(root_path)
     stores = await initialize_language_stores(root_path, conf=conf)
     return HymnsService(root_path=root_path, stores=stores)
@@ -122,7 +128,7 @@ async def get_song_by_number(
         return ml.Result.ERR(exp)
 
 
-async def query_song_by_title(
+async def query_songs_by_title(
     service: "HymnsService",
     q: str,
     lang: str,
@@ -150,7 +156,7 @@ async def query_song_by_title(
         return ml.Result.ERR(exp)
 
 
-async def query_song_by_number(
+async def query_songs_by_number(
     service: "HymnsService",
     q: int,
     lang: str,

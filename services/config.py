@@ -7,7 +7,7 @@ from funml import to_dict
 from py_scdb import AsyncStore
 import funml as ml
 
-from services.utils import get_store_path, record_to_json
+from services.utils import get_store_path
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -27,7 +27,7 @@ async def save_service_config(
     """
     config_store = _get_config_store(root_path)
     key = _config_key
-    value = record_to_json(conf)
+    value = ml.to_json(conf)
     await config_store.set(key, value)
 
 
@@ -41,9 +41,16 @@ async def get_service_config(
 
     Returns:
         the service config object found at the given path
+
+    Raises:
+        ValueError: no persistent service configuration as of yet
     """
     config_store = _get_config_store(root_path)
     config_as_str = await config_store.get(_config_key)
+
+    if config_as_str is None:
+        raise ValueError("no persistent service configuration as of yet")
+
     config_as_dict = json.loads(config_as_str)
     return ServiceConfig(**config_as_dict)
 

@@ -15,30 +15,30 @@ class Song:
 
 
 class MusicalNote(ml.Enum):
-    C_MAJOR = "C"
-    C_MINOR = "Cm"
-    C_SHARP_MAJOR = "C#"
-    C_SHARP_MINOR = "C#m"
-    D_MAJOR = "D"
-    D_MINOR = "Dm"
-    D_SHARP_MAJOR = "D#"
-    D_SHARP_MINOR = "D#m"
-    E_MAJOR = "E"
-    E_MINOR = "Em"
-    F_MAJOR = "F"
-    F_MINOR = "Fm"
-    F_SHARP_MAJOR = "F#"
-    F_SHARP_MINOR = "F#m"
-    G_MAJOR = "G"
-    G_MINOR = "Gm"
-    G_SHARP_MAJOR = "G#"
-    G_SHARP_MINOR = "G#m"
-    A_MAJOR = "A"
-    A_MINOR = "Am"
-    A_SHARP_MAJOR = "A#"
-    A_SHARP_MINOR = "A#m"
-    B_MAJOR = "B"
-    B_MINOR = "Bm"
+    C_MAJOR = None
+    C_MINOR = None
+    C_SHARP_MAJOR = None
+    C_SHARP_MINOR = None
+    D_MAJOR = None
+    D_MINOR = None
+    D_SHARP_MAJOR = None
+    D_SHARP_MINOR = None
+    E_MAJOR = None
+    E_MINOR = None
+    F_MAJOR = None
+    F_MINOR = None
+    F_SHARP_MAJOR = None
+    F_SHARP_MINOR = None
+    G_MAJOR = None
+    G_MINOR = None
+    G_SHARP_MAJOR = None
+    G_SHARP_MINOR = None
+    A_MAJOR = None
+    A_MINOR = None
+    A_SHARP_MAJOR = None
+    A_SHARP_MINOR = None
+    B_MAJOR = None
+    B_MINOR = None
 
 
 @ml.record

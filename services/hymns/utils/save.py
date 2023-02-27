@@ -1,13 +1,14 @@
 """Utility functions and types for handling save to database operations"""
 from typing import TYPE_CHECKING
 
+import funml as ml
+
 from services.config import add_new_language
-from services.utils import record_to_json
 from services.hymns.models import Song
 from .init import initialize_language_store
 
 if TYPE_CHECKING:
-    from ..data_types import LanguageStore, HymnsService
+    from ..types import LanguageStore, HymnsService
 
 
 async def save_song(service: "HymnsService", song: Song) -> "HymnsService":
@@ -46,13 +47,13 @@ async def _save_new_language(service: "HymnsService", lang: str) -> "HymnsServic
     return service
 
 
-def _save_to_titles_store(store: LanguageStore, song: Song):
+def _save_to_titles_store(store: "LanguageStore", song: Song):
     """Saves song in language store by song title"""
-    value = record_to_json(song)
+    value = ml.to_json(song)
     return store.titles_store.set(song.title, v=value)
 
 
-def _save_to_numbers_store(store: LanguageStore, song: Song):
+def _save_to_numbers_store(store: "LanguageStore", song: Song):
     """Saves song in language store by song number"""
-    value = record_to_json(song)
+    value = ml.to_json(song)
     return store.titles_store.set(f"{song.number}", v=value)

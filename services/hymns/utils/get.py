@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from services.hymns.models import Song
-import shared as shared_utils
+from .shared import convert_json_to_song
 from ..errors import ValidationError, NotFoundError
 
 if TYPE_CHECKING:
-    from ..data_types import LanguageStore
+    from ..types import LanguageStore
 
 
 async def get_song_by_title(store: "LanguageStore", title: str) -> Song:
@@ -27,7 +27,7 @@ async def get_song_by_title(store: "LanguageStore", title: str) -> Song:
             f"song of title: '{title}' not found for language: '{store.language}'"
         )
 
-    song = shared_utils.convert_json_to_song(payload)
+    song = convert_json_to_song(payload)
     return song
 
 
@@ -42,7 +42,7 @@ async def get_song_by_number(store: "LanguageStore", number: int) -> Song:
         the Song whose song number is the `number` provided
     """
     payload = await store.numbers_store.get(f"{number}")
-    song = shared_utils.convert_json_to_song(payload)
+    song = convert_json_to_song(payload)
     return song
 
 

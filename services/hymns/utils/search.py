@@ -6,7 +6,7 @@ from .shared import convert_json_to_song
 
 if TYPE_CHECKING:
     from ..models import Song
-    from ..data_types import LanguageStore
+    from ..types import LanguageStore
 
 
 async def query_store_by_title(
