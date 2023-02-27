@@ -1,26 +1,13 @@
 """Utilities common to many operations"""
-import json
 from typing import TYPE_CHECKING
 
 import funml as ml
 
 from services.hymns.errors import NotFoundError
-from services.hymns.models import Song, MusicalNote
+from services.hymns.models import MusicalNote
 
 if TYPE_CHECKING:
     from ..types import HymnsService
-
-
-def convert_json_to_song(data: str) -> Song:
-    """Converts a JSON string into a Song.
-
-    Args:
-        data: the JSON representation of the song
-
-    Returns:
-        the Song represented by `data`
-    """
-    return Song(**json.loads(data))
 
 
 def get_language_store(service: "HymnsService", lang: str):

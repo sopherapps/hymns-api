@@ -27,7 +27,7 @@ async def delete_from_all_stores(
         raise ValidationError("no title or number supplied for deletion")
 
     songs = []
-    for _, store in service.stores:
+    for store in service.stores.values():
         try:
             song = await delete_from_one_store(store, title=title, number=number)
             songs.append(song)
@@ -62,8 +62,8 @@ async def delete_from_one_store(
             f"song title: '{title}' or number: {number} for language: '{store.language}'"
         )
 
-    await _delete_from_titles_store(store, title=title)
-    await _delete_from_numbers_store(store, number=number)
+    await _delete_from_titles_store(store, title=song.title)
+    await _delete_from_numbers_store(store, number=song.number)
 
     return song
 

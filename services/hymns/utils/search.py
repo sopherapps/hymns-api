@@ -2,7 +2,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from .shared import convert_json_to_song
+import funml as ml
 
 if TYPE_CHECKING:
     from ..models import Song
@@ -24,7 +24,7 @@ async def query_store_by_title(
         a list of matching songs for the given search term in the given store
     """
     payload = await store.titles_store.search(term=q, skip=skip, limit=limit)
-    return [convert_json_to_song(item) for _, item in payload]
+    return [ml.from_json(Song, value=item) for _, item in payload]
 
 
 async def query_store_by_number(
@@ -42,4 +42,4 @@ async def query_store_by_number(
         a list of matching songs for the given search term in the given store
     """
     payload = await store.numbers_store.search(term=f"{q}", skip=skip, limit=limit)
-    return [convert_json_to_song(item) for _, item in payload]
+    return [ml.from_json(Song, value=item) for _, item in payload]

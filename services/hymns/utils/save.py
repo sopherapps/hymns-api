@@ -56,4 +56,4 @@ def _save_to_titles_store(store: "LanguageStore", song: Song):
 def _save_to_numbers_store(store: "LanguageStore", song: Song):
     """Saves song in language store by song number"""
     value = ml.to_json(song)
-    return store.titles_store.set(f"{song.number}", v=value)
+    return store.numbers_store.set(f"{song.number}", v=value)

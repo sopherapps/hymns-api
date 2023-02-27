@@ -1,7 +1,7 @@
 """A collection of error types for this service"""
 
 
-class NotFoundError(BaseException):
+class NotFoundError(Exception):
     """Exception returned when data is not found.
 
     Args:
@@ -15,7 +15,7 @@ class NotFoundError(BaseException):
         return f"NotFoundError: Not found {self.arg}"
 
 
-class ValidationError(BaseException):
+class ValidationError(Exception):
     """Exception returned when data is not of expected type or shape.
 
     Args:

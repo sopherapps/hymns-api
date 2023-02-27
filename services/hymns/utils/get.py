@@ -2,8 +2,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import funml as ml
 from services.hymns.models import Song
-from .shared import convert_json_to_song
 from ..errors import ValidationError, NotFoundError
 
 if TYPE_CHECKING:
@@ -19,6 +19,9 @@ async def get_song_by_title(store: "LanguageStore", title: str) -> Song:
 
     Returns:
         the Song whose title is the `title` provided
+
+    Raises:
+        services.hymns.errors.NotFoundError: song of given title not found for given language
     """
     payload = await store.titles_store.get(title)
 
@@ -27,7 +30,7 @@ async def get_song_by_title(store: "LanguageStore", title: str) -> Song:
             f"song of title: '{title}' not found for language: '{store.language}'"
         )
 
-    song = convert_json_to_song(payload)
+    song = ml.from_json(type_=Song, value=payload)
     return song
 
 
@@ -40,9 +43,18 @@ async def get_song_by_number(store: "LanguageStore", number: int) -> Song:
 
     Returns:
         the Song whose song number is the `number` provided
+
+    Raises:
+        services.hymns.errors.NotFoundError: song of given number not found for given language
     """
     payload = await store.numbers_store.get(f"{number}")
-    song = convert_json_to_song(payload)
+
+    if payload is None:
+        raise NotFoundError(
+            f"song of number: '{number}' not found for language: '{store.language}'"
+        )
+
+    song = ml.from_json(type_=Song, value=payload)
     return song
 
 

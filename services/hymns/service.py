@@ -59,27 +59,28 @@ async def delete_song(
     service: "HymnsService",
     title: str | None = None,
     number: int | None = None,
-    lang: str | None = None,
+    language: str | None = None,
 ) -> ml.Result:
     """Deletes the song of the given number or title
 
-    If neither title nor number are provided, an ml.Result.ERR will be returned with a ValidationError
+    If neither title nor number are provided, an ml.Result.ERR will be returned with a ValidationError.
+    If not found, it will return a NotFoundError
 
     Args:
         service: the HymnsService from which to delete the song
         title: the title of the song to delete. It can be None if number is provided. Default is None.
         number: the song number to delete. It can be None if title is provided. Default is None.
-        lang: the language from which to delete the song. If None, the song is deleted from all languages. Default: None
+        language: the language from which to delete the song. If None, the song is deleted from all languages. Default: None
 
     Returns:
         an ml.Result.OK with songs that have been deleted or an ml.Result.ERR with the exception that occurred
     """
     try:
-        if lang is None:
+        if language is None:
             songs = await delete_from_all_stores(service, title=title, number=number)
             return ml.Result.OK(songs)
         else:
-            store = get_language_store(service, lang=lang)
+            store = get_language_store(service, lang=language)
             song = await delete_from_one_store(store, title=title, number=number)
             return ml.Result.OK([song])
     except Exception as exp:
@@ -87,20 +88,20 @@ async def delete_song(
 
 
 async def get_song_by_title(
-    service: "HymnsService", title: str, lang: str
+    service: "HymnsService", title: str, language: str
 ) -> ml.Result:
     """Gets a song by title and language.
 
     Args:
         service: the HymnsService from which to get the song
         title: the title of the song to retrieve
-        lang: the language the song is in
+        language: the language the song is in
 
     Returns:
         an ml.Result.OK with the Song that has been got or an ml.Result.ERR with the exception that occurred
     """
     try:
-        store = get_language_store(service, lang=lang)
+        store = get_language_store(service, lang=language)
         song = await get_raw_song_by_title(store, title=title)
         return ml.Result.OK(song)
     except Exception as exp:
@@ -108,20 +109,20 @@ async def get_song_by_title(
 
 
 async def get_song_by_number(
-    service: "HymnsService", number: int, lang: str
+    service: "HymnsService", number: int, language: str
 ) -> ml.Result:
     """Gets a song by song number and language.
 
     Args:
         service: the HymnsService from which to get the song
         number: the song number of the song to retrieve
-        lang: the language the song is in
+        language: the language the song is in
 
     Returns:
         an ml.Result.OK with the Song that has been got or an ml.Result.ERR with the exception that occurred
     """
     try:
-        store = get_language_store(service, lang=lang)
+        store = get_language_store(service, lang=language)
         song = await get_raw_song_by_number(store, number=number)
         return ml.Result.OK(song)
     except Exception as exp:
@@ -131,7 +132,7 @@ async def get_song_by_number(
 async def query_songs_by_title(
     service: "HymnsService",
     q: str,
-    lang: str,
+    language: str,
     skip: int | None = None,
     limit: int | None = None,
 ) -> ml.Result:
@@ -140,7 +141,7 @@ async def query_songs_by_title(
     Args:
         service: the HymnsService that has the data
         q: the search term
-        lang: the language the songs are to be expected in
+        language: the language the songs are to be expected in
         skip: the number of matching items to skip before starting to return
         limit: the maximum number of songs to return in the query
 
@@ -149,7 +150,7 @@ async def query_songs_by_title(
         or an ml.Result.ERR with the exception that occurred
     """
     try:
-        store = await get_language_store(service, lang=lang)
+        store = await get_language_store(service, lang=language)
         songs = await query_store_by_title(store, q=q, skip=skip, limit=limit)
         return ml.Result.OK(PaginatedResponse(data=songs, skip=skip, limit=limit))
     except Exception as exp:
@@ -159,7 +160,7 @@ async def query_songs_by_title(
 async def query_songs_by_number(
     service: "HymnsService",
     q: int,
-    lang: str,
+    language: str,
     skip: int | None = None,
     limit: int | None = None,
 ) -> ml.Result:
@@ -168,7 +169,7 @@ async def query_songs_by_number(
     Args:
         service: the HymnsService that has the data
         q: the search term
-        lang: the language the songs are to be expected in
+        language: the language the songs are to be expected in
         skip: the number of matching items to skip before starting to return
         limit: the maximum number of songs to return in the query
 
@@ -177,7 +178,7 @@ async def query_songs_by_number(
         or an ml.Result.ERR with the exception that occurred
     """
     try:
-        store = await get_language_store(service, lang=lang)
+        store = await get_language_store(service, lang=language)
         songs = await query_store_by_number(store, q=q, skip=skip, limit=limit)
         return ml.Result.OK(PaginatedResponse(data=songs, skip=skip, limit=limit))
     except Exception as exp:
