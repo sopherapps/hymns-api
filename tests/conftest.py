@@ -29,7 +29,7 @@ _service_configs = [
         languages=["English"],
     ),
 ]
-_languages = ["Runyoro", "Lusamya", "Luganda", "Rukiga", "Sebei"]
+languages = ["Runyoro", "Lusamya", "Luganda", "Rukiga", "Sebei"]
 _songs = [
     Song(
         number=90,
@@ -90,11 +90,11 @@ service_configs_fixture = [
     (lazy_fixture("test_db_path"), conf) for conf in _service_configs
 ]
 service_configs_langs_fixture = [
-    (lazy_fixture("test_db_path"), conf, _languages) for conf in _service_configs[:1]
+    (lazy_fixture("test_db_path"), conf, languages) for conf in _service_configs[:1]
 ]
 songs_fixture = [(lazy_fixture("hymns_service"), song) for song in _songs]
 songs_langs_fixture = [
-    (lazy_fixture("hymns_service"), song, _languages) for song in _songs
+    (lazy_fixture("hymns_service"), song, languages) for song in _songs
 ]
 
 

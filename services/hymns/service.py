@@ -133,8 +133,8 @@ async def query_songs_by_title(
     service: "HymnsService",
     q: str,
     language: str,
-    skip: int | None = None,
-    limit: int | None = None,
+    skip: int = 0,
+    limit: int = 0,
 ) -> ml.Result:
     """Gets a list of songs in the given language whose title starts with the given `q`.
 
@@ -150,7 +150,7 @@ async def query_songs_by_title(
         or an ml.Result.ERR with the exception that occurred
     """
     try:
-        store = await get_language_store(service, lang=language)
+        store = get_language_store(service, lang=language)
         songs = await query_store_by_title(store, q=q, skip=skip, limit=limit)
         return ml.Result.OK(PaginatedResponse(data=songs, skip=skip, limit=limit))
     except Exception as exp:
@@ -161,8 +161,8 @@ async def query_songs_by_number(
     service: "HymnsService",
     q: int,
     language: str,
-    skip: int | None = None,
-    limit: int | None = None,
+    skip: int = 0,
+    limit: int = 0,
 ) -> ml.Result:
     """Gets a list of songs in the given language whose number starts with the given `q`.
 
@@ -178,7 +178,7 @@ async def query_songs_by_number(
         or an ml.Result.ERR with the exception that occurred
     """
     try:
-        store = await get_language_store(service, lang=language)
+        store = get_language_store(service, lang=language)
         songs = await query_store_by_number(store, q=q, skip=skip, limit=limit)
         return ml.Result.OK(PaginatedResponse(data=songs, skip=skip, limit=limit))
     except Exception as exp:

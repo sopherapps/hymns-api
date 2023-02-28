@@ -3,14 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import funml as ml
+from ..models import Song
 
 if TYPE_CHECKING:
-    from ..models import Song
     from ..types import LanguageStore
 
 
 async def query_store_by_title(
-    store: "LanguageStore", q: str, skip: int | None, limit: int | None
+    store: "LanguageStore", q: str, skip: int = 0, limit: int = 0
 ) -> list[Song]:
     """Gets a list of songs whose titles begin with the search term.
 
@@ -28,7 +28,7 @@ async def query_store_by_title(
 
 
 async def query_store_by_number(
-    store: "LanguageStore", q: int, skip: int | None, limit: int | None
+    store: "LanguageStore", q: int, skip: int = 0, limit: int = 0
 ) -> list[Song]:
     """Gets a list of songs whose song numbers begin with the search term.
 

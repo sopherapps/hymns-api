@@ -4,10 +4,10 @@ import funml as ml
 import pytest
 from services import hymns
 from services.hymns.errors import NotFoundError, ValidationError
-from services.hymns.models import MusicalNote, Song
+from services.hymns.models import MusicalNote, Song, LineSection, PaginatedResponse
 from services.hymns.types import HymnsService
 from services.hymns.utils.shared import note_to_str
-from ..conftest import songs_fixture, songs_langs_fixture
+from ..conftest import songs_fixture, songs_langs_fixture, languages
 
 
 @pytest.mark.asyncio
@@ -183,15 +183,109 @@ async def test_delete_song_by_number_one_lang(
 
 
 @pytest.mark.asyncio
-async def test_query_song_by_title():
+async def test_query_song_by_title(hymns_service: HymnsService):
     """query_song_by_title queries for songs whose title start with a given phrase"""
-    pass
+    song_data = dict(
+        key=MusicalNote.F_MAJOR,
+        lines=[[LineSection(note=MusicalNote.F_MAJOR, words="hey you")]],
+    )
+    nums_and_titles = [
+        (1, "foo"),
+        (2, "food"),
+        (3, "fell"),
+        (4, "fish"),
+        (5, "yell"),
+        (6, "yearn"),
+        (7, "yeast"),
+        (8, "yogurt"),
+    ]
+
+    test_data = [
+        ("f", 0, 0, [(1, "foo"), (2, "food"), (3, "fell"), (4, "fish")]),
+        ("f", 1, 0, [(2, "food"), (3, "fell"), (4, "fish")]),
+        ("f", 2, 0, [(3, "fell"), (4, "fish")]),
+        ("fo", 0, 0, [(1, "foo"), (2, "food")]),
+        ("foo", 0, 0, [(1, "foo"), (2, "food")]),
+        ("foo", 0, 1, [(1, "foo")]),
+        ("fe", 0, 0, [(3, "fell")]),
+        ("fi", 0, 0, [(4, "fish")]),
+        ("y", 0, 0, [(5, "yell"), (6, "yearn"), (7, "yeast"), (8, "yogurt")]),
+        ("ye", 0, 0, [(5, "yell"), (6, "yearn"), (7, "yeast")]),
+        ("ye", 1, 2, [(6, "yearn"), (7, "yeast")]),
+        ("ye", 1, 1, [(6, "yearn")]),
+        ("yea", 0, 0, [(6, "yearn"), (7, "yeast")]),
+        ("yo", 0, 0, [(8, "yogurt")]),
+    ]
+
+    for lang in languages:
+        for num, title in nums_and_titles:
+            song = Song(**song_data, title=title, number=num, language=lang)
+            await hymns.add_song(hymns_service, song=song)
+
+    for lang in languages:
+        for q, skip, limit, expected_nums_and_titles in test_data:
+            expected = [
+                Song(**song_data, title=title, number=num, language=lang)
+                for num, title in expected_nums_and_titles
+            ]
+            res = await hymns.query_songs_by_title(
+                hymns_service, q, language=lang, skip=skip, limit=limit
+            )
+            assert res == ml.Result.OK(
+                PaginatedResponse(data=expected, skip=skip, limit=limit)
+            )
 
 
 @pytest.mark.asyncio
-async def test_query_song_by_number():
+async def test_query_song_by_number(hymns_service: HymnsService):
     """query_song_by_title queries for songs whose song number start with a given set of digits"""
-    pass
+    song_data = dict(
+        key=MusicalNote.F_MAJOR,
+        lines=[[LineSection(note=MusicalNote.F_MAJOR, words="hey you")]],
+    )
+    nums_and_titles = [
+        (1, "foo"),
+        (2, "food"),
+        (11, "fell"),
+        (20, "fish"),
+        (2029, "yell"),
+        (111, "yearn"),
+        (22, "yeast"),
+        (110, "yogurt"),
+    ]
+
+    test_data = [
+        (1, 0, 0, [(1, "foo"), (11, "fell"), (111, "yearn"), (110, "yogurt")]),
+        (1, 0, 2, [(1, "foo"), (11, "fell")]),
+        (1, 2, 0, [(111, "yearn"), (110, "yogurt")]),
+        (11, 0, 0, [(11, "fell"), (111, "yearn"), (110, "yogurt")]),
+        (111, 0, 0, [(111, "yearn")]),
+        (110, 0, 0, [(110, "yogurt")]),
+        (110, 1, 1, []),
+        (2, 0, 0, [(2, "food"), (20, "fish"), (2029, "yell"), (22, "yeast")]),
+        (20, 0, 0, [(20, "fish"), (2029, "yell")]),
+        (20, 1, 1, [(2029, "yell")]),
+        (202, 0, 0, [(2029, "yell")]),
+        (22, 0, 0, [(22, "yeast")]),
+    ]
+
+    for lang in languages:
+        for num, title in nums_and_titles:
+            song = Song(**song_data, title=title, number=num, language=lang)
+            await hymns.add_song(hymns_service, song=song)
+
+    for lang in languages:
+        for q, skip, limit, expected_nums_and_titles in test_data:
+            expected = [
+                Song(**song_data, title=title, number=num, language=lang)
+                for num, title in expected_nums_and_titles
+            ]
+            res = await hymns.query_songs_by_number(
+                hymns_service, q, language=lang, skip=skip, limit=limit
+            )
+            assert res == ml.Result.OK(
+                PaginatedResponse(data=expected, skip=skip, limit=limit)
+            )
 
 
 def test_note_to_str():
