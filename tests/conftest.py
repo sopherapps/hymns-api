@@ -4,7 +4,10 @@ import shutil
 import pytest
 import pytest_asyncio
 from pytest_lazyfixture import lazy_fixture
+from fastapi.testclient import TestClient
 
+import api.models
+from api.routes import app
 from services import hymns
 from services.config import ServiceConfig, save_service_config
 from services.hymns.models import LineSection, Song, MusicalNote
@@ -84,6 +87,7 @@ _songs = [
         ],
     ),
 ]
+api_songs = [api.models.Song.from_hymns_song(song) for song in _songs]
 
 
 service_configs_fixture = [
@@ -95,6 +99,9 @@ service_configs_langs_fixture = [
 songs_fixture = [(lazy_fixture("hymns_service"), song) for song in _songs]
 songs_langs_fixture = [
     (lazy_fixture("hymns_service"), song, languages) for song in _songs
+]
+api_songs_langs_fixture = [
+    (lazy_fixture("test_client"), song, languages) for song in api_songs
 ]
 
 
@@ -110,6 +117,16 @@ def test_db_path(root_folder_path):
     db_path = os.path.join(root_folder_path, "test_db")
     yield db_path
     delete_folder(db_path)
+
+
+@pytest.fixture()
+def test_client(root_folder_path):
+    """the http test client for testing the API part of the project"""
+    os.environ.setdefault("DB_FOLDER", "test_db")
+
+    yield TestClient(app)
+
+    delete_folder(os.path.join(root_folder_path, "test_db"))
 
 
 @aio_pytest_fixture
