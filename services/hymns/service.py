@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from os import PathLike
-from typing import TYPE_CHECKING
 import funml as ml
 
 from services.config import get_service_config
@@ -46,7 +44,8 @@ async def add_song(service: "HymnsService", song: Song) -> ml.Result:
         song: the song to add to the hymns service
 
     Returns:
-        an ml.Result.OK with the Song that has been added or an ml.Result.ERR with the exception that occurred
+        an ml.Result.OK(Song) with the Song that has been added or an ml.Result.ERR(Exception) with the exception \
+        that occurred
     """
     try:
         await save_song(service, song)
@@ -73,7 +72,8 @@ async def delete_song(
         language: the language from which to delete the song. If None, the song is deleted from all languages. Default: None
 
     Returns:
-        an ml.Result.OK with songs that have been deleted or an ml.Result.ERR with the exception that occurred
+        an ml.Result.OK(Song) with songs that have been deleted or an ml.Result.ERR(Exception) with the exception \
+        that occurred
     """
     try:
         if language is None:
@@ -98,7 +98,8 @@ async def get_song_by_title(
         language: the language the song is in
 
     Returns:
-        an ml.Result.OK with the Song that has been got or an ml.Result.ERR with the exception that occurred
+        an ml.Result.OK(Song) with the Song that has been got or an ml.Result.ERR(Exception) with the exception
+        that occurred
     """
     try:
         store = get_language_store(service, lang=language)
@@ -119,7 +120,8 @@ async def get_song_by_number(
         language: the language the song is in
 
     Returns:
-        an ml.Result.OK with the Song that has been got or an ml.Result.ERR with the exception that occurred
+        an ml.Result.OK(Song) with the Song that has been got or an ml.Result.ERR(Exception) with the exception \
+        that occurred
     """
     try:
         store = get_language_store(service, lang=language)
@@ -146,8 +148,8 @@ async def query_songs_by_title(
         limit: the maximum number of songs to return in the query
 
     Returns:
-        an ml.Result.OK with songs that have matched within the limits \
-        or an ml.Result.ERR with the exception that occurred
+        an ml.Result.OK(PaginatedResponse(data=List[Song], skip=int, limit=int)) with songs that have matched within \
+        the limits or an ml.Result.ERR(Exception) with the exception that occurred
     """
     try:
         store = get_language_store(service, lang=language)
@@ -174,8 +176,8 @@ async def query_songs_by_number(
         limit: the maximum number of songs to return in the query
 
     Returns:
-        an ml.Result.OK with songs that have matched within the limits \
-        or an ml.Result.ERR with the exception that occurred
+        an ml.Result.OK(PaginatedResponse(data=List[Song], skip=int, limit=int)) with songs that have matched within \
+        the limits or an ml.Result.ERR(Exception) with the exception that occurred
     """
     try:
         store = get_language_store(service, lang=language)

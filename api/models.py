@@ -32,7 +32,7 @@ class MusicalNote(str, Enum):
     B_MAJOR = "B"
     B_MINOR = "Bm"
 
-    def to_hymns_musical_note(self) -> hymns.MusicalNote:
+    def to_hymns(self) -> hymns.MusicalNote:
         """Returns the hymns.models.MusicalNote equivalent of the current instance"""
         return (
             ml.match()
@@ -93,7 +93,7 @@ class MusicalNote(str, Enum):
         )
 
     @classmethod
-    def from_hymns_musical_note(cls, note: hymns.MusicalNote) -> "MusicalNote":
+    def from_hymns(cls, note: hymns.MusicalNote) -> "MusicalNote":
         """Returns the MusicalNote equivalent of the hymns.models.MusicalNote"""
         return (
             ml.match()
@@ -158,17 +158,15 @@ class LineSection(BaseModel):
     note: MusicalNote
     words: str
 
-    def to_hymns_line_section(self) -> hymns.LineSection:
+    def to_hymns(self) -> hymns.LineSection:
         """Returns the hymns.models.LineSection equivalent of current instance"""
-        return hymns.LineSection(
-            note=self.note.to_hymns_musical_note(), words=self.words
-        )
+        return hymns.LineSection(note=self.note.to_hymns(), words=self.words)
 
     @classmethod
-    def from_hymns_line_section(cls, section: hymns.LineSection) -> "LineSection":
+    def from_hymns(cls, section: hymns.LineSection) -> "LineSection":
         """Returns the LineSection equivalent of the hymns.models.LineSection passed"""
         return LineSection(
-            note=MusicalNote.from_hymns_musical_note(section.note), words=section.words
+            note=MusicalNote.from_hymns(section.note), words=section.words
         )
 
 
@@ -185,32 +183,26 @@ class Song(BaseModel):
             number=self.number,
             language=self.language,
             title=self.title,
-            key=self.key.to_hymns_musical_note(),
-            lines=[
-                [section.to_hymns_line_section() for section in line]
-                for line in self.lines
-            ],
+            key=self.key.to_hymns(),
+            lines=[[section.to_hymns() for section in line] for line in self.lines],
         )
 
     @classmethod
-    def from_hymns_song(cls, song: hymns.Song) -> "Song":
+    def from_hymns(cls, song: hymns.Song) -> "Song":
         """Returns the Song equivalent of the hymns.models.Song passed to it"""
         return cls(
             number=song.number,
             language=song.language,
             title=song.title,
-            key=MusicalNote.from_hymns_musical_note(song.key),
+            key=MusicalNote.from_hymns(song.key),
             lines=[
-                [LineSection.from_hymns_line_section(section) for section in line]
+                [LineSection.from_hymns(section) for section in line]
                 for line in song.lines
             ],
         )
 
 
 class PartialSong(BaseModel):
-    number: Optional[int]
-    language: Optional[str]
-    title: Optional[str]
     key: Optional[MusicalNote]
     lines: Optional[List[List[LineSection]]]
 
@@ -225,4 +217,13 @@ class PaginatedResponse(BaseModel):
 
     skip: int = 0
     limit: int = 0
-    data: List[SongDetail] = []
+    data: List[Song] = []
+
+    @classmethod
+    def from_hymns(cls, res: hymns.PaginatedResponse) -> "PaginatedResponse":
+        """Returns the Song equivalent of the hymns.models.Song passed to it"""
+        return cls(
+            skip=res.skip,
+            limit=res.limit,
+            data=[Song.from_hymns(song) for song in res.data],
+        )

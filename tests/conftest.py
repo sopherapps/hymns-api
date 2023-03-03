@@ -87,7 +87,7 @@ _songs = [
         ],
     ),
 ]
-api_songs = [api.models.Song.from_hymns_song(song) for song in _songs]
+api_songs = [api.models.Song.from_hymns(song) for song in _songs]
 
 
 service_configs_fixture = [

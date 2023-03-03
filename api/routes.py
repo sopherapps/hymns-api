@@ -157,14 +157,14 @@ Errors:
 
 Response: `Song` - the song deleted
 """
-from typing import Optional, List, Any
+from typing import Optional, List
 
 from fastapi import FastAPI, Query
 import funml as ml
 
 import settings
 from api.models import Song, SongDetail, PaginatedResponse, PartialSong
-from api.utils import raise_http_error
+from api.utils import try_to
 from services import hymns, config
 
 hymns_service: Optional[hymns.types.HymnsService] = None
@@ -188,16 +188,7 @@ async def get_song_detail(
     song = SongDetail(number=number, translations={})
 
     for lang in languages:
-        res = await hymns.get_song_by_number(
-            hymns_service, number=number, language=lang
-        )
-
-        _translation = (
-            ml.match()
-            .case(ml.Result.OK(Any), do=Song.from_hymns_song)
-            .case(ml.Result.ERR(Exception), do=raise_http_error)(res)
-        )
-
+        _translation = await _get_song(language=lang, number=number)
         song.translations[lang] = _translation
 
     return song
@@ -207,44 +198,67 @@ async def get_song_detail(
 async def query_by_title(
     language: str,
     q: str,
-    page: int = 0,
+    skip: int = 0,
     limit: int = 0,
-    translations: Optional[List[str]] = (),
 ):
     """Returns list of songs whose titles match the search term `q`"""
-    pass
+    res = await hymns.query_songs_by_title(
+        hymns_service, q=q, language=language, skip=skip, limit=limit
+    )
+    convert_to_paginated_resp = try_to(PaginatedResponse.from_hymns)
+    return convert_to_paginated_resp(res)
 
 
 @app.get("/{language}/find-by-number/{q}", response_model=PaginatedResponse)
 async def query_by_number(
     language: str,
     q: int,
-    page: int = 0,
+    skip: int = 0,
     limit: int = 0,
-    translations: Optional[List[str]] = (),
 ):
     """Returns list of songs whose numbers match the search term `q`"""
-    pass
+    res = await hymns.query_songs_by_number(
+        hymns_service, q=q, language=language, skip=skip, limit=limit
+    )
+    convert_to_paginated_resp = try_to(PaginatedResponse.from_hymns)
+    return convert_to_paginated_resp(res)
 
 
 @app.post("/", response_model=Song)
 async def create_song(song: Song):
     """Creates a new song"""
-    res = await hymns.add_song(hymns_service, song=song.to_hymns_song())
-    return (
-        ml.match()
-        .case(ml.Result.OK(Any), do=Song.from_hymns_song)
-        .case(ml.Result.ERR(Exception), do=raise_http_error)(res)
-    )
+    return await _save_song(song)
 
 
 @app.put("/{language}/{number}", response_model=Song)
 async def update_song(language: str, number: int, song: PartialSong):
     """Updates the song whose number is given"""
-    pass
+    original = await _get_song(language=language, number=number)
+    new_data = {**original.dict(), **song.dict(exclude_unset=True)}
+    new_song = Song(**new_data)
+    return await _save_song(new_song)
 
 
 @app.delete("/{language}/{number}", response_model=Song)
 async def delete_song(language: str, number: int):
     """Deletes the song whose number is given"""
-    pass
+    res = await hymns.delete_song(hymns_service, number=number, language=language)
+    convert_to_song_list = try_to(ml.imap(Song.from_hymns))
+    deleted_songs = convert_to_song_list(res)
+    return deleted_songs[0]
+
+
+async def _save_song(song: Song):
+    """Saves the song in the database"""
+    res = await hymns.add_song(hymns_service, song=song.to_hymns_song())
+    convert_to_song = try_to(Song.from_hymns)
+    return convert_to_song(res)
+
+
+async def _get_song(language: str, number: int) -> Song:
+    """Gets the song for the given language and song number"""
+    res = await hymns.get_song_by_number(
+        hymns_service, number=number, language=language
+    )
+    convert_to_song = try_to(Song.from_hymns)
+    return convert_to_song(res)

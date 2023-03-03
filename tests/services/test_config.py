@@ -6,7 +6,6 @@ from py_scdb import AsyncStore
 
 from services.config import (
     save_service_config,
-    ServiceConfig,
     get_service_config,
     add_new_language,
     get_titles_store,
