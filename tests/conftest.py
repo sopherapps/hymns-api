@@ -122,11 +122,10 @@ def test_db_path(root_folder_path):
 @pytest.fixture()
 def test_client(root_folder_path):
     """the http test client for testing the API part of the project"""
-    os.environ.setdefault("DB_FOLDER", "test_db")
-
+    db_path = os.path.join(root_folder_path, "test_db")
+    os.environ.setdefault("DB_PATH", db_path)
     yield TestClient(app)
-
-    delete_folder(os.path.join(root_folder_path, "test_db"))
+    delete_folder(db_path)
 
 
 @aio_pytest_fixture

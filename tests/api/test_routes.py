@@ -1,9 +1,15 @@
 from typing import List, Dict, Any
 
+import funml as ml
 import pytest
 from fastapi.testclient import TestClient
-from api.models import Song, MusicalNote, LineSection, PaginatedResponse
+from api.models import Song
 from tests.conftest import api_songs_langs_fixture, languages, api_songs
+
+
+class AuthType(ml.Enum):
+    API_KEY = None
+    OAUTH2 = None
 
 
 @pytest.mark.parametrize("client, song, langs", api_songs_langs_fixture)
@@ -11,27 +17,35 @@ def test_create_song(client: TestClient, song: Song, langs: List[str]):
     """create_song creates a song"""
 
     with client:
+        headers = _get_auth_headers(client, auth_type=AuthType.API_KEY)
+
         for lang in langs:
             new_song = Song(**{**song.dict(), "language": lang})
             payload = new_song.dict()
 
-            response = client.post("/", json=payload)
+            response = client.post("/", json=payload, headers=headers)
             assert response.status_code == 200
             assert response.json() == payload
 
             _assert_song_has_content(
-                client, language=lang, number=song.number, content=payload
+                client,
+                language=lang,
+                number=song.number,
+                content=payload,
+                headers=headers,
             )
 
 
 def test_get_song_detail(test_client: TestClient):
     """get_song_detail gets a song's details"""
     with test_client:
+        headers = _get_auth_headers(test_client, auth_type=AuthType.API_KEY)
+
         for lang in languages:
             for song in api_songs:
                 new_song = Song(**{**song.dict(), "language": lang})
                 payload = new_song.dict()
-                response = test_client.post("/", json=payload)
+                response = test_client.post("/", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for song in api_songs:
@@ -42,7 +56,9 @@ def test_get_song_detail(test_client: TestClient):
                 },
             )
             response = test_client.get(
-                f"/{languages[0]}/{song.number}", params={"translation": languages[1:]}
+                f"/{languages[0]}/{song.number}",
+                params={"translation": languages[1:]},
+                headers=headers,
             )
             assert response.status_code == 200
             assert response.json() == expected
@@ -69,42 +85,52 @@ def test_update_song(client: TestClient, song: Song, langs: List[str]):
     ]
 
     with client:
+        headers = _get_auth_headers(client, auth_type=AuthType.API_KEY)
+
         for new_data in test_data:
             for lang in langs:
                 new_song = Song(**{**song.dict(), "language": lang})
                 payload = new_song.dict()
                 expected = {**payload, **new_data}
 
-                response = client.post("/", json=payload)
+                response = client.post("/", json=payload, headers=headers)
                 assert response.status_code == 200
 
-                response = client.put(f"/{lang}/{song.number}", json=new_data)
+                response = client.put(
+                    f"/{lang}/{song.number}", json=new_data, headers=headers
+                )
                 assert response.status_code == 200
                 assert response.json() == expected
 
                 _assert_song_has_content(
-                    client, language=lang, number=song.number, content=expected
+                    client,
+                    language=lang,
+                    number=song.number,
+                    content=expected,
+                    headers=headers,
                 )
 
 
 def test_delete_song(test_client: TestClient):
     """Deletes the song of the given song number"""
     with test_client:
+        headers = _get_auth_headers(test_client, auth_type=AuthType.API_KEY)
+
         for lang in languages:
             for song in api_songs:
                 new_song = Song(**{**song.dict(), "language": lang})
                 payload = new_song.dict()
-                response = test_client.post("/", json=payload)
+                response = test_client.post("/", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for lang in languages:
             for song in api_songs:
                 expected = Song(**{**song.dict(), "language": lang}).dict()
-                response = test_client.delete(f"/{lang}/{song.number}")
+                response = test_client.delete(f"/{lang}/{song.number}", headers=headers)
                 assert response.status_code == 200
                 assert response.json() == expected
 
-                response = test_client.get(f"/{lang}/{song.number}")
+                response = test_client.get(f"/{lang}/{song.number}", headers=headers)
                 assert response.status_code == 404
 
 
@@ -143,10 +169,12 @@ def test_query_by_title(test_client: TestClient):
     ]
 
     with test_client:
+        headers = _get_auth_headers(test_client, auth_type=AuthType.API_KEY)
+
         for lang in languages:
             for num, title in nums_and_titles:
                 payload = dict(**song_data, title=title, number=num, language=lang)
-                response = test_client.post("/", json=payload)
+                response = test_client.post("/", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for lang in languages:
@@ -156,7 +184,9 @@ def test_query_by_title(test_client: TestClient):
                     for num, title in expected_nums_and_titles
                 ]
                 response = test_client.get(
-                    f"/{lang}/find-by-title/{q}", params=dict(skip=skip, limit=limit)
+                    f"/{lang}/find-by-title/{q}",
+                    params=dict(skip=skip, limit=limit),
+                    headers=headers,
                 )
                 assert response.status_code == 200
                 assert response.json() == dict(data=expected, skip=skip, limit=limit)
@@ -195,10 +225,12 @@ def test_query_by_number(test_client: TestClient):
     ]
 
     with test_client:
+        headers = _get_auth_headers(test_client, auth_type=AuthType.API_KEY)
+
         for lang in languages:
             for num, title in nums_and_titles:
                 payload = dict(**song_data, title=title, number=num, language=lang)
-                response = test_client.post("/", json=payload)
+                response = test_client.post("/", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for lang in languages:
@@ -208,16 +240,40 @@ def test_query_by_number(test_client: TestClient):
                     for num, title in expected_nums_and_titles
                 ]
                 response = test_client.get(
-                    f"/{lang}/find-by-number/{q}", params=dict(skip=skip, limit=limit)
+                    f"/{lang}/find-by-number/{q}",
+                    params=dict(skip=skip, limit=limit),
+                    headers=headers,
                 )
                 assert response.status_code == 200
                 assert response.json() == dict(data=expected, skip=skip, limit=limit)
 
 
 def _assert_song_has_content(
-    client: TestClient, language: str, number: int, content: Dict[str, Any]
+    client: TestClient,
+    language: str,
+    number: int,
+    content: Dict[str, Any],
+    headers: Dict[str, Any] = {},
 ):
     """Asserts that the song for the given language and number has the given content"""
-    response = client.get(f"/{language}/{number}")
+    response = client.get(f"/{language}/{number}", headers=headers)
     assert response.status_code == 200
     assert response.json() == dict(number=number, translations={language: content})
+
+
+def _get_auth_headers(client, auth_type: AuthType):
+    """Gets the auth headers to use for the client"""
+    return (
+        ml.match(auth_type)
+        .case(AuthType.API_KEY, do=ml.val({"x-api-key": _get_api_key(client)}))
+        .case(AuthType.OAUTH2, do=ml.val({}))()
+    )
+
+
+def _get_api_key(client: TestClient) -> str:
+    """Gets the API key to use to access the API."""
+    response = client.post(f"/register", json={})
+    assert response.status_code == 200
+
+    data = response.json()
+    return data["key"]

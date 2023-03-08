@@ -159,29 +159,67 @@ Response: `Song` - the song deleted
 """
 from typing import Optional, List
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Security, HTTPException, status
+from fastapi.security.api_key import APIKeyHeader
 import funml as ml
 
 import settings
-from api.models import Song, SongDetail, PaginatedResponse, PartialSong
+from api.models import Song, SongDetail, PaginatedResponse, PartialSong, Application
 from api.utils import try_to
-from services import hymns, config
+from services import hymns, config, auth
+
+from services.auth import is_valid_api_key
+
+api_key_header = APIKeyHeader(name="x-api-key")
 
 hymns_service: Optional[hymns.types.HymnsService] = None
+auth_service: Optional[auth.types.AuthService] = None
 app = FastAPI()
 
 
 @app.on_event("startup")
 async def start():
     """Initializes the hymns service"""
-    await config.save_service_config(settings.DB_PATH, settings.HYMNS_SERVICE_CONFIG)
+    db_path = settings.get_db_path()
+    hymns_service_conf = settings.get_hymns_service_config()
+    api_key_length = settings.get_api_key_length()
+
+    await config.save_service_config(db_path, hymns_service_conf)
+
     global hymns_service
-    hymns_service = await hymns.initialize(settings.DB_PATH)
+    hymns_service = await hymns.initialize(db_path)
+
+    global auth_service
+    auth_service = await auth.initialize(root_path=db_path, key_size=api_key_length)
+
+
+async def _get_api_key(header_key: str = Security(api_key_header)):
+    """Dependency for retrieving and validating the API key from the header or cookie"""
+    if await is_valid_api_key(auth_service, header_key):
+        return header_key
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN, detail="could not validate credentials"
+    )
+
+
+@app.post("/register", response_model=Application)
+async def register():
+    """Registers a new app to get a new API key.
+
+    It returns the application with the raw key but saves a hashed key in the auth service
+    such that an API key is seen only once
+    """
+    res = await auth.register_app(auth_service)
+    convert_to_application = try_to(Application.from_hymns)
+    return convert_to_application(res)
 
 
 @app.get("/{language}/{number}", response_model=SongDetail)
 async def get_song_detail(
-    language: str, number: int, translation: List[str] = Query(default=())
+    language: str,
+    number: int,
+    translation: List[str] = Query(default=()),
+    api_key: str = Security(_get_api_key),
 ):
     """Displays the details of the song whose number is given"""
     languages = [language, *translation]
@@ -200,6 +238,7 @@ async def query_by_title(
     q: str,
     skip: int = 0,
     limit: int = 0,
+    api_key: str = Security(_get_api_key),
 ):
     """Returns list of songs whose titles match the search term `q`"""
     res = await hymns.query_songs_by_title(
@@ -215,6 +254,7 @@ async def query_by_number(
     q: int,
     skip: int = 0,
     limit: int = 0,
+    api_key: str = Security(_get_api_key),
 ):
     """Returns list of songs whose numbers match the search term `q`"""
     res = await hymns.query_songs_by_number(
@@ -225,13 +265,15 @@ async def query_by_number(
 
 
 @app.post("/", response_model=Song)
-async def create_song(song: Song):
+async def create_song(song: Song, api_key: str = Security(_get_api_key)):
     """Creates a new song"""
     return await _save_song(song)
 
 
 @app.put("/{language}/{number}", response_model=Song)
-async def update_song(language: str, number: int, song: PartialSong):
+async def update_song(
+    language: str, number: int, song: PartialSong, api_key: str = Security(_get_api_key)
+):
     """Updates the song whose number is given"""
     original = await _get_song(language=language, number=number)
     new_data = {**original.dict(), **song.dict(exclude_unset=True)}
@@ -240,7 +282,9 @@ async def update_song(language: str, number: int, song: PartialSong):
 
 
 @app.delete("/{language}/{number}", response_model=Song)
-async def delete_song(language: str, number: int):
+async def delete_song(
+    language: str, number: int, api_key: str = Security(_get_api_key)
+):
     """Deletes the song whose number is given"""
     res = await hymns.delete_song(hymns_service, number=number, language=language)
     convert_to_song_list = try_to(ml.imap(Song.from_hymns))

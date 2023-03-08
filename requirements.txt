@@ -1,7 +1,7 @@
 black==23.1.0
 fastapi==0.88.0
 pre-commit==2.21.0
-py_scdb==0.2.1
+py_scdb==0.2.2
 pytest==7.2.0
 pytest-lazy-fixture==0.6.3
 uvicorn[standard]

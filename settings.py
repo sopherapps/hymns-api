@@ -3,15 +3,29 @@ import os
 # Path to the Database folder
 from services.config import ServiceConfig
 
-_db_folder_name = os.getenv("DB_FOLDER", "db")
+_default_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db")
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), _db_folder_name)
 
-# hymns service Config
-HYMNS_SERVICE_CONFIG = ServiceConfig(
-    max_keys=2_000_000,
-    redundant_blocks=2,
-    pool_capacity=5,
-    compaction_interval=3600,
-    languages=["english", "runyoro"],
-)
+def get_db_path() -> str:
+    """Gets the db path for the app"""
+    return os.getenv("DB_PATH", _default_db_path)
+
+
+def get_hymns_service_config() -> ServiceConfig:
+    """Gets the service config for the hymns service"""
+    return ServiceConfig(
+        max_keys=int(os.getenv("MAX_HYMNS", "2_000_000")),
+        redundant_blocks=int(os.getenv("DB_REDUNDANCY_BLOCKS", "2")),
+        pool_capacity=int(os.getenv("DB_BUFFER_POOL_CAPACITY", "5")),
+        compaction_interval=int(os.getenv("DB_COMPACTION_INTERVAL", "3600")),
+        languages=[
+            lang.strip()
+            for lang in os.getenv("LANGUAGES", "english,runyoro").split(",")
+        ],
+    )
+
+
+# FastAPI
+def get_api_key_length() -> int:
+    """Gets the length of all API KEY's that will be generated"""
+    return int(os.getenv("API_KEY_LENGTH", "32"))

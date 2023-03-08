@@ -1,5 +1,7 @@
 from enum import Enum
 from typing import List, Optional, Dict
+
+from services import auth
 from services.hymns import models as hymns
 import funml as ml
 
@@ -226,4 +228,33 @@ class PaginatedResponse(BaseModel):
             skip=res.skip,
             limit=res.limit,
             data=[Song.from_hymns(song) for song in res.data],
+        )
+
+
+class Application(BaseModel):
+    """An application registered to query the API
+
+    Intentionally have no data associated with an application
+    such that in case of a breach, no client data is at risk.
+    Otherwise we would have used a Oauth2: say a request sent
+    to a login link with API key and client secret, then a JWT
+    access token to be used per request is generated and returned
+    to client.
+    """
+
+    key: str
+
+    def to_hymns(
+        self,
+    ) -> auth.types.Application:
+        """Returns the Application equivalent of the auth.types.Application passed to it"""
+        return auth.types.Application(
+            key=self.key,
+        )
+
+    @classmethod
+    def from_hymns(cls, application: auth.types.Application) -> "Application":
+        """Returns the Application equivalent of the auth.types.Application passed to it"""
+        return cls(
+            key=application.key,
         )
