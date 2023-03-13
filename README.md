@@ -177,7 +177,7 @@ Query Params:
 Errors:
     
   - 404 - Not Found if language-number does not exist
-  - 401 - Unauthorized if API key is not valid or was not supplied
+  - 403 - Unauthorized if API key is not valid or was not supplied
   - 429 - Too many requests if user makes too many requests in a given amount of time
   
 Response:
@@ -211,7 +211,7 @@ Query Params:
 
 Errors:
     
-- 401 - Unauthorized if API Key is not valid or was not supplied
+- 403 - Unauthorized if API Key is not valid or was not supplied
 - 429 - Too many requests if user makes too many requests in a given amount of time
 
 Response:
@@ -244,7 +244,7 @@ Headers:
 Errors:
 
   - 409 - Conflict if language-number combination already exists
-  - 401 - Unauthorized if authorization token is not valid or was not supplied
+  - 403 - Unauthorized if authorization token is not valid or was not supplied
   - 400 - Bad Request if request passed is invalid
   - 429 - Too many requests if user makes too many requests in a given amount of time
 
@@ -279,7 +279,7 @@ Params:
 Errors:
 
   - 404 - Not Found if language-number does not exist
-  - 401 - Unauthorized if authorization token is not valid or was not supplied
+  - 403 - Unauthorized if authorization token is not valid or was not supplied
   - 400 - Bad Request if request passed is invalid
   - 429 - Too many requests if user makes too many requests in a given amount of time
 
@@ -308,7 +308,7 @@ Headers:
 Errors:
     
   - 404 - Not Found if language-number does not exist
-  - 401 - Unauthorized if authorization token is not valid or was not supplied
+  - 403 - Unauthorized if authorization token is not valid or was not supplied
   - 429 - Too many requests if user makes too many requests in a given amount of time
 
 Response: `Song` - the song deleted

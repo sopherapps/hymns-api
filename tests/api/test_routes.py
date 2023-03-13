@@ -254,11 +254,62 @@ def test_query_by_number(test_client: TestClient):
                 assert response.json() == dict(data=expected, skip=skip, limit=limit)
 
 
+def test_api_key(test_client: TestClient):
+    """Some routes expect an API key in the headers"""
+    routes = [
+        ("GET", "/english/find-by-number/1", {}, dict(skip=0, limit=0)),
+        ("GET", "/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
+        ("GET", "/english/1", {}, {}),
+        ("POST", "/", api_songs[0].dict(), {}),
+        ("PUT", "/english/1", api_songs[0].dict(), {}),
+        ("DELETE", "/english/1", api_songs[0].dict(), {}),
+    ]
+    with test_client:
+        api_key = _get_api_key(test_client)
+        headers = {"x-api-key": api_key}
+        no_api_key_headers = {"Content-Type": "application/json"}
+        wrong_api_key_headers = {"x-api-key": f"{api_key[:-3]}you"}
+
+        for song in api_songs:
+            payload = song.dict()
+            response = test_client.post("/", json=payload, headers=headers)
+            assert response.status_code == 200
+
+        for method, route, body, params in routes:
+            response = test_client.request(
+                method, url=route, json=body, params=params, headers=no_api_key_headers
+            )
+            assert response.status_code == 403
+            assert response.json() == {"detail": "Not authenticated"}
+
+            response = test_client.request(
+                method,
+                url=route,
+                json=body,
+                params=params,
+                headers=wrong_api_key_headers,
+            )
+            assert response.status_code == 403
+            assert response.json() == {"detail": "could not validate credentials"}
+
+            response = test_client.request(
+                method, url=route, json=body, params=params, headers=headers
+            )
+            assert response.status_code in (200, 404)
+
+
 def test_rate_limit(test_client_and_rate_limit):
     """All routes are protected by a rate limiter, whose rate is set using an environment variable"""
     client, max_reqs_per_sec = test_client_and_rate_limit
-    routes = [("/english/find-by-number/1", dict(skip=0, limit=0))]
-    # This failing seems to stem from memory being reused for previous rate limits
+    routes = [
+        ("GET", "/english/find-by-number/1", {}, dict(skip=0, limit=0)),
+        ("GET", "/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
+        ("GET", "/english/1", {}, {}),
+        ("POST", "/", api_songs[0].dict(), {}),
+        ("PUT", "/english/1", api_songs[0].dict(), {}),
+        ("DELETE", "/english/1", api_songs[0].dict(), {}),
+    ]
+
     with client:
         time.sleep(1)
         headers = _get_auth_headers(client, auth_type=AuthType.API_KEY)
@@ -269,23 +320,29 @@ def test_rate_limit(test_client_and_rate_limit):
             response = client.post("/", json=payload, headers=headers)
             assert response.status_code == 200
 
-        for route, params in routes:
+        for method, route, body, params in routes:
             client.app.state.limiter.reset()
 
             for _ in range(max_reqs_per_sec):
-                response = client.get(route, params=params, headers=headers)
-                assert response.status_code == 200
+                response = client.request(
+                    method, url=route, json=body, params=params, headers=headers
+                )
+                assert response.status_code in (200, 404)
 
             # the next request should throw an error because number of requests per second are exhausted.
-            response = client.get(route, params=params, headers=headers)
+            response = client.request(
+                method, url=route, json=body, params=params, headers=headers
+            )
             assert response.status_code == 429
             assert response.json() == {
                 "error": f"Rate limit exceeded: {get_rate_limit_string(max_reqs_per_sec)}"
             }
 
             time.sleep(1)
-            response = client.get(route, params=params, headers=headers)
-            assert response.status_code == 200
+            response = client.request(
+                method, url=route, json=body, params=params, headers=headers
+            )
+            assert response.status_code in (200, 404)
 
 
 def _assert_song_has_content(
