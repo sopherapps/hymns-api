@@ -1,10 +1,16 @@
+import time
 from typing import List, Dict, Any
 
 import funml as ml
 import pytest
 from fastapi.testclient import TestClient
 from api.models import Song
-from tests.conftest import api_songs_langs_fixture, languages, api_songs
+from tests.conftest import (
+    api_songs_langs_fixture,
+    languages,
+    api_songs,
+    get_rate_limit_string,
+)
 
 
 class AuthType(ml.Enum):
@@ -246,6 +252,40 @@ def test_query_by_number(test_client: TestClient):
                 )
                 assert response.status_code == 200
                 assert response.json() == dict(data=expected, skip=skip, limit=limit)
+
+
+def test_rate_limit(test_client_and_rate_limit):
+    """All routes are protected by a rate limiter, whose rate is set using an environment variable"""
+    client, max_reqs_per_sec = test_client_and_rate_limit
+    routes = [("/english/find-by-number/1", dict(skip=0, limit=0))]
+    # This failing seems to stem from memory being reused for previous rate limits
+    with client:
+        time.sleep(1)
+        headers = _get_auth_headers(client, auth_type=AuthType.API_KEY)
+
+        for song in api_songs:
+            payload = song.dict()
+            time.sleep(1)
+            response = client.post("/", json=payload, headers=headers)
+            assert response.status_code == 200
+
+        for route, params in routes:
+            client.app.state.limiter.reset()
+
+            for _ in range(max_reqs_per_sec):
+                response = client.get(route, params=params, headers=headers)
+                assert response.status_code == 200
+
+            # the next request should throw an error because number of requests per second are exhausted.
+            response = client.get(route, params=params, headers=headers)
+            assert response.status_code == 429
+            assert response.json() == {
+                "error": f"Rate limit exceeded: {get_rate_limit_string(max_reqs_per_sec)}"
+            }
+
+            time.sleep(1)
+            response = client.get(route, params=params, headers=headers)
+            assert response.status_code == 200
 
 
 def _assert_song_has_content(

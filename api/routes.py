@@ -162,6 +162,7 @@ from typing import Optional, List
 from fastapi import FastAPI, Query, Security, HTTPException, status
 from fastapi.security.api_key import APIKeyHeader
 import funml as ml
+from slowapi.middleware import SlowAPIMiddleware
 
 import settings
 from api.models import Song, SongDetail, PaginatedResponse, PartialSong, Application
@@ -170,11 +171,27 @@ from services import hymns, config, auth
 
 from services.auth import is_valid_api_key
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+
 api_key_header = APIKeyHeader(name="x-api-key")
 
 hymns_service: Optional[hymns.types.HymnsService] = None
 auth_service: Optional[auth.types.AuthService] = None
 app = FastAPI()
+app.add_middleware(SlowAPIMiddleware)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+async def _get_api_key(header_key: str = Security(api_key_header)):
+    """Dependency for retrieving and validating the API key from the header or cookie"""
+    if await is_valid_api_key(auth_service, header_key):
+        return header_key
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN, detail="could not validate credentials"
+    )
 
 
 @app.on_event("startup")
@@ -192,13 +209,12 @@ async def start():
     global auth_service
     auth_service = await auth.initialize(root_path=db_path, key_size=api_key_length)
 
-
-async def _get_api_key(header_key: str = Security(api_key_header)):
-    """Dependency for retrieving and validating the API key from the header or cookie"""
-    if await is_valid_api_key(auth_service, header_key):
-        return header_key
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN, detail="could not validate credentials"
+    global app
+    # API limiter
+    app.state.limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=[settings.get_rate_limit()],
+        enabled=settings.get_is_rate_limit_enabled(),
     )
 
 

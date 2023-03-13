@@ -89,6 +89,8 @@ _songs = [
 ]
 api_songs = [api.models.Song.from_hymns(song) for song in _songs]
 
+_rate_limits_per_second = [2, 10, 5]
+
 
 service_configs_fixture = [
     (lazy_fixture("test_db_path"), conf) for conf in _service_configs
@@ -123,7 +125,8 @@ def test_db_path(root_folder_path):
 def test_client(root_folder_path):
     """the http test client for testing the API part of the project"""
     db_path = os.path.join(root_folder_path, "test_db")
-    os.environ.setdefault("DB_PATH", db_path)
+    os.environ["DB_PATH"] = db_path
+    os.environ["ENABLE_RATE_LIMIT"] = "False"
     yield TestClient(app)
     delete_folder(db_path)
 
@@ -142,6 +145,26 @@ async def hymns_service(service_root_path):
     yield service
 
 
+@pytest.fixture(params=_rate_limits_per_second)
+def test_client_and_rate_limit(root_folder_path, request):
+    """Returns a rate limited test client for testing the API"""
+    rate_limit = request.param
+    db_path = os.path.join(root_folder_path, "test_db")
+    os.environ["DB_PATH"] = db_path
+    os.environ["RATE_LIMIT"] = get_rate_limit_string(rate_limit)
+    os.environ["ENABLE_RATE_LIMIT"] = "True"
+
+    yield TestClient(app), rate_limit
+    # del app.state.limiter
+    app.state.limiter.reset()
+    delete_folder(db_path)
+
+
 def delete_folder(path: str):
     """Deletes the folder at the given path"""
     shutil.rmtree(path=path, ignore_errors=True)
+
+
+def get_rate_limit_string(num_per_second: int) -> str:
+    """Converts a number of requests per second to the string notation for the slowapi library"""
+    return f"{num_per_second} per 1 second"

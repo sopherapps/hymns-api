@@ -1,6 +1,5 @@
 import os
 
-# Path to the Database folder
 from services.config import ServiceConfig
 
 _default_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db")
@@ -29,3 +28,16 @@ def get_hymns_service_config() -> ServiceConfig:
 def get_api_key_length() -> int:
     """Gets the length of all API KEY's that will be generated"""
     return int(os.getenv("API_KEY_LENGTH", "32"))
+
+
+def get_rate_limit() -> str:
+    """Gets the rate limit for all routes"""
+    return os.getenv("RATE_LIMIT", "5/minute")
+
+
+def get_is_rate_limit_enabled() -> bool:
+    """Gets the configuration flag of whether the rate limit is enabled or not"""
+    env_str = os.getenv("ENABLE_RATE_LIMIT", "true").strip()
+    if env_str.lower() == "true":
+        return True
+    return False
