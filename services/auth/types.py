@@ -1,12 +1,21 @@
 """All types for the auth service"""
+import fastapi_mail
 import funml as ml
+from cryptography.fernet import Fernet
 from py_scdb import AsyncStore
 
 
 @ml.record
 class AuthService:
-    store: AsyncStore
+    auth_store: AsyncStore
+    users_store: AsyncStore
+    api_secret: str
     key_size: int
+    fernet: Fernet
+    jwt_ttl: float
+    max_login_attempts: int
+    mail: fastapi_mail.FastMail
+    mail_sender: str
 
 
 @ml.record

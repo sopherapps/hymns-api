@@ -3,7 +3,8 @@ from typing import List
 import funml as ml
 import pytest
 from services import hymns
-from services.hymns.errors import NotFoundError, ValidationError
+from services.hymns.errors import ValidationError
+from services.errors import NotFoundError
 from services.hymns.models import MusicalNote, Song, LineSection, PaginatedResponse
 from services.hymns.types import HymnsService
 from services.hymns.utils.shared import note_to_str
@@ -107,9 +108,9 @@ async def test_delete_song_by_title_all_langs(
     service: HymnsService, song: Song, languages: List[str]
 ):
     """delete_song removes the song of the given title from all languages from the hymns store"""
-    song_versions = [
+    song_versions = ml.l(
         Song(**{**ml.to_dict(song), "language": lang}) for lang in languages
-    ]
+    )
     for song_version in song_versions:
         await hymns.add_song(service, song=song_version)
 
@@ -126,9 +127,9 @@ async def test_delete_song_by_number_all_langs(
     service: HymnsService, song: Song, languages: List[str]
 ):
     """delete_song removes the song of the given number from all languages from the hymns store"""
-    song_versions = [
+    song_versions = ml.l(
         Song(**{**ml.to_dict(song), "language": lang}) for lang in languages
-    ]
+    )
 
     for song_version in song_versions:
         await hymns.add_song(service, song=song_version)
@@ -156,7 +157,7 @@ async def test_delete_song_by_title_one_lang(
         await _assert_song_exists(service, song_versions[lang])
 
         res = await hymns.delete_song(service, title=song.title, language=lang)
-        assert res == ml.Result.OK([song_versions[lang]])
+        assert res == ml.Result.OK(song_versions[lang])
 
         await _assert_song_does_not_exist(service, song_versions[lang])
 
@@ -177,7 +178,7 @@ async def test_delete_song_by_number_one_lang(
         await _assert_song_exists(service, song_versions[lang])
 
         res = await hymns.delete_song(service, number=song.number, language=lang)
-        assert res == ml.Result.OK([song_versions[lang]])
+        assert res == ml.Result.OK(song_versions[lang])
 
         await _assert_song_does_not_exist(service, song_versions[lang])
 

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import funml as ml
 
-from services.hymns.errors import NotFoundError
+from ...errors import NotFoundError
 from services.hymns.models import MusicalNote
 
 if TYPE_CHECKING:

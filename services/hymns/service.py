@@ -72,7 +72,7 @@ async def delete_song(
         language: the language from which to delete the song. If None, the song is deleted from all languages. Default: None
 
     Returns:
-        an ml.Result.OK(Song) with songs that have been deleted or an ml.Result.ERR(Exception) with the exception \
+        an ml.Result.OK(ml.IList[Song]) or ml.Result.OK(Song) with songs that have been deleted or an ml.Result.ERR(Exception) with the exception \
         that occurred
     """
     try:
@@ -82,7 +82,7 @@ async def delete_song(
         else:
             store = get_language_store(service, lang=language)
             song = await delete_from_one_store(store, title=title, number=number)
-            return ml.Result.OK([song])
+            return ml.Result.OK(song)
     except Exception as exp:
         return ml.Result.ERR(exp)
 

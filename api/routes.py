@@ -159,13 +159,25 @@ Response: `Song` - the song deleted
 """
 from typing import Optional, List
 
-from fastapi import FastAPI, Query, Security, HTTPException, status
+from fastapi import FastAPI, Query, Security, HTTPException, status, Depends, Request
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.security.api_key import APIKeyHeader
-import funml as ml
 from slowapi.middleware import SlowAPIMiddleware
 
 import settings
-from api.models import Song, SongDetail, PaginatedResponse, PartialSong, Application
+from api.models import (
+    Song,
+    SongDetail,
+    PaginatedResponse,
+    PartialSong,
+    Application,
+    LoginResponse,
+    OTPResponse,
+    OTPRequest,
+    User,
+    convert_to_base_model,
+    ChangePasswordRequest,
+)
 from api.utils import try_to
 from services import hymns, config, auth
 
@@ -185,6 +197,9 @@ app.add_middleware(SlowAPIMiddleware)
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+
 async def _get_api_key(header_key: str = Security(api_key_header)):
     """Dependency for retrieving and validating the API key from the header or cookie"""
     if await is_valid_api_key(auth_service, header_key):
@@ -194,12 +209,42 @@ async def _get_api_key(header_key: str = Security(api_key_header)):
     )
 
 
+async def _get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+    """Gets the current logged in user
+
+    Args:
+        token: the JWT token got from the oauth headers
+
+    Returns:
+        the User who is logged in
+
+    Raises:
+        raises HTTPException in case of any error
+    """
+    resp = await auth.get_current_user(auth_service, token=token)
+    convert_to_user = try_to(User.from_auth)
+    return convert_to_user(resp)
+
+
+@app.middleware("http")
+async def convert_ml_results(request: Request, call_next):
+    """Converts any type that might be an ml.Result into its associated data"""
+    response = await call_next(request)
+    # try to convert each to the given value in response_model
+    return try_to(convert_to_base_model)(response)
+
+
 @app.on_event("startup")
 async def start():
     """Initializes the hymns service"""
     db_path = settings.get_db_path()
     hymns_service_conf = settings.get_hymns_service_config()
     api_key_length = settings.get_api_key_length()
+    api_secret = settings.get_api_secret()
+    jwt_ttl = settings.get_jwt_ttl_in_sec()
+    max_login_attempts = settings.get_max_login_attempts()
+    mail_config = settings.get_email_config()
+    mail_sender = settings.get_auth_email_sender()
 
     await config.save_service_config(db_path, hymns_service_conf)
 
@@ -207,7 +252,15 @@ async def start():
     hymns_service = await hymns.initialize(db_path)
 
     global auth_service
-    auth_service = await auth.initialize(root_path=db_path, key_size=api_key_length)
+    auth_service = await auth.initialize(
+        root_path=db_path,
+        key_size=api_key_length,
+        api_secret=api_secret,
+        jwt_ttl=jwt_ttl,
+        max_login_attempts=max_login_attempts,
+        mail_config=mail_config,
+        mail_sender=mail_sender,
+    )
 
     global app
     # API limiter
@@ -219,15 +272,39 @@ async def start():
 
 
 @app.post("/register", response_model=Application)
-async def register():
+async def register_app():
     """Registers a new app to get a new API key.
 
     It returns the application with the raw key but saves a hashed key in the auth service
     such that an API key is seen only once
     """
-    res = await auth.register_app(auth_service)
-    convert_to_application = try_to(Application.from_hymns)
-    return convert_to_application(res)
+    return await auth.register_app(auth_service)
+
+
+@app.post("/login", response_model=LoginResponse)
+async def login(data: OAuth2PasswordRequestForm = Depends()):
+    """Logins in admin users"""
+    otp_url = app.url_path_for(
+        "verify_otp"
+    )  # FIXME: When you add the admin site, change this to a proper HTML page
+    return await auth.login(
+        auth_service,
+        username=data.username,
+        password=data.password,
+        otp_verification_url=otp_url,
+    )
+
+
+@app.post("/verify-otp", response_model=OTPResponse)
+async def verify_otp(data: OTPRequest, token: str = Depends(oauth2_scheme)):
+    """Verifies the one-time password got by email"""
+    return await auth.verify_otp(auth_service, otp=data.otp, unverified_token=token)
+
+
+@app.post("/change-password")
+async def change_password(data: ChangePasswordRequest):
+    """Initializes the password change process"""
+    return await auth.change_password(auth_service, data=data)
 
 
 @app.get("/{language}/{number}", response_model=SongDetail)
@@ -257,11 +334,9 @@ async def query_by_title(
     api_key: str = Security(_get_api_key),
 ):
     """Returns list of songs whose titles match the search term `q`"""
-    res = await hymns.query_songs_by_title(
+    return await hymns.query_songs_by_title(
         hymns_service, q=q, language=language, skip=skip, limit=limit
     )
-    convert_to_paginated_resp = try_to(PaginatedResponse.from_hymns)
-    return convert_to_paginated_resp(res)
 
 
 @app.get("/{language}/find-by-number/{q}", response_model=PaginatedResponse)
@@ -273,46 +348,37 @@ async def query_by_number(
     api_key: str = Security(_get_api_key),
 ):
     """Returns list of songs whose numbers match the search term `q`"""
-    res = await hymns.query_songs_by_number(
+    return await hymns.query_songs_by_number(
         hymns_service, q=q, language=language, skip=skip, limit=limit
     )
-    convert_to_paginated_resp = try_to(PaginatedResponse.from_hymns)
-    return convert_to_paginated_resp(res)
 
 
 @app.post("/", response_model=Song)
-async def create_song(song: Song, api_key: str = Security(_get_api_key)):
+async def create_song(song: Song, user: User = Depends(_get_current_user)):
     """Creates a new song"""
-    return await _save_song(song)
+    return await hymns.add_song(hymns_service, song=song.to_hymns_song())
 
 
 @app.put("/{language}/{number}", response_model=Song)
 async def update_song(
-    language: str, number: int, song: PartialSong, api_key: str = Security(_get_api_key)
+    language: str,
+    number: int,
+    song: PartialSong,
+    user: User = Depends(_get_current_user),
 ):
     """Updates the song whose number is given"""
     original = await _get_song(language=language, number=number)
     new_data = {**original.dict(), **song.dict(exclude_unset=True)}
     new_song = Song(**new_data)
-    return await _save_song(new_song)
+    return await hymns.add_song(hymns_service, song=new_song.to_hymns_song())
 
 
 @app.delete("/{language}/{number}", response_model=Song)
 async def delete_song(
-    language: str, number: int, api_key: str = Security(_get_api_key)
+    language: str, number: int, user: User = Depends(_get_current_user)
 ):
     """Deletes the song whose number is given"""
-    res = await hymns.delete_song(hymns_service, number=number, language=language)
-    convert_to_song_list = try_to(ml.imap(Song.from_hymns))
-    deleted_songs = convert_to_song_list(res)
-    return deleted_songs[0]
-
-
-async def _save_song(song: Song):
-    """Saves the song in the database"""
-    res = await hymns.add_song(hymns_service, song=song.to_hymns_song())
-    convert_to_song = try_to(Song.from_hymns)
-    return convert_to_song(res)
+    return await hymns.delete_song(hymns_service, number=number, language=language)
 
 
 async def _get_song(language: str, number: int) -> Song:

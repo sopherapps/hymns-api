@@ -79,8 +79,15 @@ async def get_numbers_store(root_path: str | bytes | PathLike[bytes], lang: str)
 
 
 async def get_auth_store(root_path: str | bytes | PathLike[bytes]):
-    """Gets the AsyncStore for the auth service"""
+    """Gets the AsyncStore for the auth keys"""
     conf = await _get_db_config(root_path, name=f"hymns-auth")
+    conf_as_dict = to_dict(conf)
+    return AsyncStore(**conf_as_dict)
+
+
+async def get_users_store(root_path: str | bytes | PathLike[bytes]):
+    """Gets the AsyncStore for the users"""
+    conf = await _get_db_config(root_path, name=f"hymns-users")
     conf_as_dict = to_dict(conf)
     return AsyncStore(**conf_as_dict)
 
