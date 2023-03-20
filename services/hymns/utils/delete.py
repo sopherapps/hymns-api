@@ -38,7 +38,8 @@ async def delete_from_all_stores(
             pass
 
     if len(songs) == 0:
-        raise NotFoundError(f"song title: {title} or number: {number}")
+        msg = f"song title '{title}'" if title is not None else f"song number {number}"
+        raise NotFoundError(msg)
 
     return ml.l(*songs)
 
@@ -61,9 +62,8 @@ async def delete_from_one_store(
     """
     song = await get_song_by_title_or_number(store, title=title, number=number)
     if song is None:
-        raise NotFoundError(
-            f"song title: '{title}' or number: {number} for language: '{store.language}'"
-        )
+        msg = f"song title: {title}" if title is not None else f"song number: {number}"
+        raise NotFoundError(f"{msg} for language: '{store.language}'")
 
     await _delete_from_titles_store(store, title=song.title)
     await _delete_from_numbers_store(store, number=song.number)
