@@ -13,3 +13,6 @@ class NotFoundError(Exception):
 
     def __repr__(self):
         return f"NotFoundError: Not found {self.arg}"
+
+    def __str__(self):
+        return self.__repr__()

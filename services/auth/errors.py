@@ -13,3 +13,6 @@ class AuthenticationError(Exception):
 
     def __repr__(self):
         return f"AuthenticationError: {self.msg}"
+
+    def __str__(self):
+        return self.__repr__()

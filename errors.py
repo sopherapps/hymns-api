@@ -13,3 +13,6 @@ class ConfigurationError(Exception):
 
     def __repr__(self):
         return f"ConfigurationError: {self.msg}"
+
+    def __str__(self):
+        return self.__repr__()
