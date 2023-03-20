@@ -10,7 +10,7 @@ from cryptography.fernet import Fernet
 from services.auth.types import AuthService, Application
 from services.config import get_auth_store, get_users_store
 from .errors import AuthenticationError
-from .models import UserInDb, LoginResponse, UserDTO, ChangePasswordRequest
+from .models import UserInDb, LoginResponse, UserDTO, ChangePasswordRequest, OTPResponse
 from .utils import (
     generate_random_key,
     is_password_match,
@@ -154,7 +154,7 @@ async def create_user(service: AuthService, user: UserDTO) -> ml.Result:
         password=hash_password(user.password),
         otp_counter=encrypt_str(service.fernet, "0"),
         otp_secret=encrypt_str(service.fernet, pyotp.random_base32()),
-        sign_in_attempts=0,
+        login_attempts=0,
     )
     try:
         await service.users_store.set(user.username, ml.to_json(user_in_db))
@@ -191,7 +191,7 @@ async def update_user(
             pass
 
         new_user = await _update_user(service, user=user, **encrypted_data)
-        return ml.Result.OK(UserDTO(**ml.to_dict(new_user)))
+        return ml.Result.OK(UserDTO.from_user_in_db(new_user))
     except Exception as exp:
         return ml.Result.ERR(exp)
 
@@ -213,7 +213,7 @@ async def remove_user(service: AuthService, username: str) -> ml.Result:
             raise NotFoundError(username)
 
         await service.users_store.delete(username)
-        return ml.Result.OK(UserDTO(**ml.to_dict(user)))
+        return ml.Result.OK(UserDTO.from_user_in_db(user))
     except Exception as exp:
         return ml.Result.ERR(exp)
 
@@ -230,7 +230,7 @@ async def get_current_user(service: AuthService, token: str) -> ml.Result:
     """
     try:
         user = await _get_user_in_jwt(service, token=token, is_verified=True)
-        return ml.Result.OK(UserDTO(**ml.to_dict(user)))
+        return ml.Result.OK(UserDTO.from_user_in_db(user))
     except Exception as exp:
         return ml.Result.ERR(exp)
 
@@ -284,7 +284,7 @@ async def verify_otp(
     """Verifies the OTP given the unverified JWT token
 
     Returns:
-        an ml.Result.OK(str) of the verified JWT token if the OTP is right for the given token
+        an ml.Result.OK(OTPResponse) of the verified JWT token if the OTP is right for the given token
     """
     try:
         user = await _get_user_in_jwt(
@@ -310,7 +310,7 @@ async def verify_otp(
             await _update_user(service, user=user, login_attempts=0)
 
             verified_jwt = _generate_jwt(service, username=user.username, verified=True)
-            return ml.Result.OK(verified_jwt)
+            return ml.Result.OK(OTPResponse(token=verified_jwt))
     except Exception as exp:
         return ml.Result.ERR(exp)
 
@@ -364,7 +364,7 @@ def _is_otp_valid(service: AuthService, user: UserInDb, otp: str) -> bool:
     return pyotp.HOTP(otp_secret).verify(otp, otp_counter)
 
 
-async def _generate_jwt(service: AuthService, username: str, verified: bool) -> str:
+def _generate_jwt(service: AuthService, username: str, verified: bool) -> str:
     """Generates the JWT for the given username
 
     Args:
@@ -385,7 +385,7 @@ async def _generate_jwt(service: AuthService, username: str, verified: bool) -> 
     )
 
 
-async def _generate_otp(service: AuthService, user: UserInDb) -> str:
+def _generate_otp(service: AuthService, user: UserInDb) -> str:
     """Generates the OTP(one-time password) to be used for the given user
 
     Args:

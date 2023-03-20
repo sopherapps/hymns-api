@@ -7,6 +7,10 @@ class UserDTO:
     email: str
     password: str
 
+    @classmethod
+    def from_user_in_db(cls, user: "UserInDb") -> "UserDTO":
+        return UserDTO(username=user.username, email=user.email, password=user.password)
+
 
 @ml.record
 class UserInDb:

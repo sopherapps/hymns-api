@@ -6,6 +6,7 @@ from .service import (
     get_current_user,
     verify_otp,
     change_password,
+    create_user,
 )
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "models",
     "login",
     "get_current_user",
+    "create_user",
     "verify_otp",
     "change_password",
     "errors",

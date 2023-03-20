@@ -96,13 +96,13 @@ def get_email_config() -> fastapi_mail.ConnectionConfig:
     """
     return fastapi_mail.ConnectionConfig(
         MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
-        MAIL_PASSWORD=os.getenv("MAIL_USERNAME"),
+        MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
         MAIL_PORT=int(os.getenv("MAIL_PORT")),
         MAIL_SERVER=os.getenv("MAIL_SERVER"),
+        MAIL_FROM=os.getenv("MAIL_FROM"),
         MAIL_STARTTLS=_str_to_bool(os.getenv("MAIL_STARTTLS", "true")),
         MAIL_SSL_TLS=_str_to_bool(os.getenv("MAIL_SSL_TLS", "false")),
         MAIL_DEBUG=int(os.getenv("MAIL_DEBUG", "0")),
-        MAIL_FROM=os.getenv("MAIL_FROM", None),
         MAIL_FROM_NAME=os.getenv("MAIL_FROM_NAME", None),
         TEMPLATE_FOLDER=Path(__file__).parent / "templates",
         SUPPRESS_SEND=int(os.getenv("MAIL_SUPPRESS_SEND", "0")),

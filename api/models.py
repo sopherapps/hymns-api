@@ -1,37 +1,11 @@
 from enum import Enum
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 
 from services import auth
 from services.hymns import models as hymns
 import funml as ml
 
 from pydantic import BaseModel
-
-
-def convert_to_base_model(item: ml.Record) -> BaseModel:
-    """Converts an item that is an ml.Record into an appropriate BaseModel
-
-    The default case is it returns the item as is.
-
-    Args:
-        item: the data to be transformed into a BaseModel
-
-    Returns:
-        the converted base model instance
-    """
-    return (
-        ml.match()
-        .case(hymns.MusicalNote, do=MusicalNote.from_hymns)
-        .case(hymns.LineSection, do=LineSection.from_hymns)
-        .case(hymns.Song, do=Song.from_hymns)
-        .case(hymns.PaginatedResponse, do=PaginatedResponse.from_hymns)
-        .case(auth.types.Application, do=Application.from_auth)
-        .case(auth.types.LoginResponse, do=LoginResponse.from_auth)
-        .case(auth.types.OTPResponse, do=OTPResponse.from_auth)
-        .case(auth.types.User, do=User.from_auth)(item)
-        .case(ml.IList(...), do=ml.imap(convert_to_base_model))(item)
-        .case(Any, do=lambda v: v)
-    )
 
 
 class MusicalNote(str, Enum):

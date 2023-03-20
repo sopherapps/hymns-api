@@ -175,7 +175,6 @@ from api.models import (
     OTPResponse,
     OTPRequest,
     User,
-    convert_to_base_model,
     ChangePasswordRequest,
 )
 from api.utils import try_to
@@ -226,14 +225,6 @@ async def _get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     return convert_to_user(resp)
 
 
-@app.middleware("http")
-async def convert_ml_results(request: Request, call_next):
-    """Converts any type that might be an ml.Result into its associated data"""
-    response = await call_next(request)
-    # try to convert each to the given value in response_model
-    return try_to(convert_to_base_model)(response)
-
-
 @app.on_event("startup")
 async def start():
     """Initializes the hymns service"""
@@ -248,8 +239,11 @@ async def start():
 
     await config.save_service_config(db_path, hymns_service_conf)
 
+    global app
+
     global hymns_service
     hymns_service = await hymns.initialize(db_path)
+    app.state.hymns_service = hymns_service
 
     global auth_service
     auth_service = await auth.initialize(
@@ -261,8 +255,8 @@ async def start():
         mail_config=mail_config,
         mail_sender=mail_sender,
     )
+    app.state.auth_service = auth_service
 
-    global app
     # API limiter
     app.state.limiter = Limiter(
         key_func=get_remote_address,
@@ -278,7 +272,9 @@ async def register_app():
     It returns the application with the raw key but saves a hashed key in the auth service
     such that an API key is seen only once
     """
-    return await auth.register_app(auth_service)
+    res = await auth.register_app(auth_service)
+    transform = try_to(Application.from_auth)
+    return transform(res)
 
 
 @app.post("/login", response_model=LoginResponse)
@@ -287,24 +283,31 @@ async def login(data: OAuth2PasswordRequestForm = Depends()):
     otp_url = app.url_path_for(
         "verify_otp"
     )  # FIXME: When you add the admin site, change this to a proper HTML page
-    return await auth.login(
+    res = await auth.login(
         auth_service,
         username=data.username,
         password=data.password,
         otp_verification_url=otp_url,
     )
 
+    transform = try_to(LoginResponse.from_auth)
+    return transform(res)
+
 
 @app.post("/verify-otp", response_model=OTPResponse)
 async def verify_otp(data: OTPRequest, token: str = Depends(oauth2_scheme)):
     """Verifies the one-time password got by email"""
-    return await auth.verify_otp(auth_service, otp=data.otp, unverified_token=token)
+    res = await auth.verify_otp(auth_service, otp=data.otp, unverified_token=token)
+    transform = try_to(OTPResponse.from_auth)
+    return transform(res)
 
 
 @app.post("/change-password")
 async def change_password(data: ChangePasswordRequest):
     """Initializes the password change process"""
-    return await auth.change_password(auth_service, data=data)
+    res = await auth.change_password(auth_service, data=data)
+    transform = try_to(lambda v: v)
+    return transform(res)
 
 
 @app.get("/{language}/{number}", response_model=SongDetail)
@@ -334,9 +337,11 @@ async def query_by_title(
     api_key: str = Security(_get_api_key),
 ):
     """Returns list of songs whose titles match the search term `q`"""
-    return await hymns.query_songs_by_title(
+    res = await hymns.query_songs_by_title(
         hymns_service, q=q, language=language, skip=skip, limit=limit
     )
+    transform = try_to(PaginatedResponse.from_hymns)
+    return transform(res)
 
 
 @app.get("/{language}/find-by-number/{q}", response_model=PaginatedResponse)
@@ -348,15 +353,19 @@ async def query_by_number(
     api_key: str = Security(_get_api_key),
 ):
     """Returns list of songs whose numbers match the search term `q`"""
-    return await hymns.query_songs_by_number(
+    res = await hymns.query_songs_by_number(
         hymns_service, q=q, language=language, skip=skip, limit=limit
     )
+    transform = try_to(PaginatedResponse.from_hymns)
+    return transform(res)
 
 
 @app.post("/", response_model=Song)
 async def create_song(song: Song, user: User = Depends(_get_current_user)):
     """Creates a new song"""
-    return await hymns.add_song(hymns_service, song=song.to_hymns_song())
+    res = await hymns.add_song(hymns_service, song=song.to_hymns_song())
+    transform = try_to(Song.from_hymns)
+    return transform(res)
 
 
 @app.put("/{language}/{number}", response_model=Song)
@@ -370,7 +379,9 @@ async def update_song(
     original = await _get_song(language=language, number=number)
     new_data = {**original.dict(), **song.dict(exclude_unset=True)}
     new_song = Song(**new_data)
-    return await hymns.add_song(hymns_service, song=new_song.to_hymns_song())
+    res = await hymns.add_song(hymns_service, song=new_song.to_hymns_song())
+    transform = try_to(Song.from_hymns)
+    return transform(res)
 
 
 @app.delete("/{language}/{number}", response_model=Song)
@@ -378,7 +389,9 @@ async def delete_song(
     language: str, number: int, user: User = Depends(_get_current_user)
 ):
     """Deletes the song whose number is given"""
-    return await hymns.delete_song(hymns_service, number=number, language=language)
+    res = await hymns.delete_song(hymns_service, number=number, language=language)
+    transform = try_to(Song.from_hymns)
+    return transform(res)
 
 
 async def _get_song(language: str, number: int) -> Song:
