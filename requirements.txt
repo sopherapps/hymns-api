@@ -14,3 +14,6 @@ passlib~=1.7.4
 cryptography~=39.0.2
 fastapi-mail==1.2.6
 python-multipart==0.0.6
+pyotp~=2.8.0
+aiosmtplib~=2.0.1
+python-dotenv~=0.21.0

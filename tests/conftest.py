@@ -129,6 +129,7 @@ def test_client(root_folder_path):
     os.environ["DB_PATH"] = db_path
     os.environ["ENABLE_RATE_LIMIT"] = "False"
     os.environ["API_SECRET"] = Fernet.generate_key().decode()
+    os.environ["OTP_VERIFICATION_URL"] = app.url_path_for("verify_otp")
     _setup_mail_config()
 
     yield TestClient(app)
@@ -158,6 +159,7 @@ def test_client_and_rate_limit(root_folder_path, request):
     os.environ["RATE_LIMIT"] = get_rate_limit_string(rate_limit)
     os.environ["ENABLE_RATE_LIMIT"] = "True"
     os.environ["API_SECRET"] = Fernet.generate_key().decode()
+    os.environ["OTP_VERIFICATION_URL"] = app.url_path_for("verify_otp")
     _setup_mail_config()
 
     yield TestClient(app), rate_limit

@@ -1,167 +1,11 @@
-"""
-#### Details - GET `/{language}/{number}?translations={language}&translations={language}`...
-
-Access: Public
-
-Headers:
-
-```python
-{"X-API-KEY": "some api key"}
-```
-
-Params:
-
-  - `language` = the language for the given hymn
-  - `number` = the hymn number
-
-Query Params:
-
-  - `translations` = the list of other language translations to return for given song
-
-Errors:
-
-  - 404 - Not Found if language-number does not exist
-  - 403 - Unauthorized if API key is not valid or was not supplied
-  - 429 - Too many requests if user makes too many requests in a given amount of time
-
-Response:
-
-```python
-class SongDetail(BaseModel):
-    number: int
-    translations: Dict[str, Song]
-```
-
-#### List - GET `/{language}/?page={int}&limit={int}&translations={language}&translations={language}`...
-
-Access: Public
-
-Headers:
-
-```python
-{"X-API-KEY": "some api key"}
-```
-
-Params:
-
-  - `language` = the language for the given hymn
-  - `number` = the hymn number
-
-Query Params:
-
-  - `page` (default = 1) - the page of results to return for the paginated format used
-  - `limit` (default = 20) - the number of results per page to return for the paginated format used
-  - `translations` = the list of other language translations to return for given song
-
-Errors:
-
-- 403 - Unauthorized if API Key is not valid or was not supplied
-- 429 - Too many requests if user makes too many requests in a given amount of time
-
-Response:
-
-```python
-
-SongTitle = str
-
-class SongItem(BaseModel):
-    number: int
-    translations: Dict[Language, SongTitle]
-
-
-class SongList(BaseModel):
-    data: List[SongItem]
-    page: int
-    limit: int
-```
-
-#### Create - POST `/`
-
-Access: Private Admin
-
-Headers:
-
-```python
-{"Authorization": "Bearer some api key"}
-```
-
-Errors:
-
-  - 409 - Conflict if language-number combination already exists
-  - 403 - Unauthorized if authorization token is not valid or was not supplied
-  - 400 - Bad Request if request passed is invalid
-  - 429 - Too many requests if user makes too many requests in a given amount of time
-
-Request:
-
-```python
-class CreateSongRequest(BaseModel):
-    number: int
-    language: Language
-    title: str
-    key: MusicalNote
-    lines: List[List[LineSection]]
-```
-
-Response: `Song`
-
-#### Update - PUT `/{language}/{number}`
-
-Access: Private Admin
-
-Headers:
-
-```python
-{"Authorization": "Bearer some api key"}
-```
-
-Params:
-
-  - `language` = the language for the given hymn
-  - `number` = the hymn number
-
-Errors:
-
-  - 404 - Not Found if language-number does not exist
-  - 403 - Unauthorized if authorization token is not valid or was not supplied
-  - 400 - Bad Request if request passed is invalid
-  - 429 - Too many requests if user makes too many requests in a given amount of time
-
-Request:
-
-```python
-class UpdateSongRequest(BaseModel):
-    title: str
-    key: MusicalNote
-    lines: List[List[LineSection]]
-```
-
-Response: `Song`
-
-
-#### Delete - DELETE `/{language}/{number}`
-
-Access: Private Admin
-
-Headers:
-
-```python
-{"Authorization": "Bearer some api key"}
-```
-
-Errors:
-
-  - 404 - Not Found if language-number does not exist
-  - 403 - Unauthorized if authorization token is not valid or was not supplied
-  - 429 - Too many requests if user makes too many requests in a given amount of time
-
-Response: `Song` - the song deleted
+"""The RESTful API and the admin site
 """
 from typing import Optional, List
 
-from fastapi import FastAPI, Query, Security, HTTPException, status, Depends, Request
+from fastapi import FastAPI, Query, Security, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.security.api_key import APIKeyHeader
+from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
 
 import settings
@@ -192,8 +36,16 @@ api_key_header = APIKeyHeader(name="x-api-key")
 hymns_service: Optional[hymns.types.HymnsService] = None
 auth_service: Optional[auth.types.AuthService] = None
 app = FastAPI()
+
+# app set up
 app.add_middleware(SlowAPIMiddleware)
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -236,15 +88,18 @@ async def start():
     max_login_attempts = settings.get_max_login_attempts()
     mail_config = settings.get_email_config()
     mail_sender = settings.get_auth_email_sender()
+    otp_verification_url = settings.get_otp_verification_url()
 
     await config.save_service_config(db_path, hymns_service_conf)
 
     global app
 
+    # hymns service
     global hymns_service
     hymns_service = await hymns.initialize(db_path)
     app.state.hymns_service = hymns_service
 
+    # auth service
     global auth_service
     auth_service = await auth.initialize(
         root_path=db_path,
@@ -256,6 +111,7 @@ async def start():
         mail_sender=mail_sender,
     )
     app.state.auth_service = auth_service
+    app.state.otp_verification_url = otp_verification_url
 
     # API limiter
     app.state.limiter = Limiter(
@@ -280,9 +136,7 @@ async def register_app():
 @app.post("/login", response_model=LoginResponse)
 async def login(data: OAuth2PasswordRequestForm = Depends()):
     """Logins in admin users"""
-    otp_url = app.url_path_for(
-        "verify_otp"
-    )  # FIXME: When you add the admin site, change this to a proper HTML page
+    otp_url = app.state.otp_verification_url
     res = await auth.login(
         auth_service,
         username=data.username,
