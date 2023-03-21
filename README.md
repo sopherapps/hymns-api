@@ -328,6 +328,41 @@ Response: `Song` - the song deleted
 - The `tests` package mirrors the folder structure followed by the project, 
   but with `test_` prefixes on the module names.
 
+## How to Run
+
+- Clone the repo
+
+```shell
+git clone git@github.com:sopherapps/hymns-api.git
+```
+
+- Copy `.env.example` to `.env` and update its contents
+
+```shell
+cd hymns-api
+cp .env.example .env
+```
+
+- Install requirements
+
+```shell
+python3 -m venv env 
+source env/bin/activate
+pip install -r requirements.txt
+```
+
+- Run the app
+
+```shell
+uvicorn main:app --reload
+```
+
+- To run tests, stop the app with `Ctrl+C` and run
+
+```shell
+pytest
+```
+
 ## Acknowledgements
 
 - Century Publishing House Ltd published the version from which most of these hymns are got.

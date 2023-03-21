@@ -2,13 +2,15 @@ import os
 from pathlib import Path
 
 import aiosmtplib.smtp
+import dotenv
 import fastapi_mail
-from cryptography.fernet import Fernet
 
 from errors import ConfigurationError
 from services.config import ServiceConfig
 
 _default_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db")
+
+dotenv.load_dotenv()
 
 
 def get_db_path() -> str:
@@ -39,6 +41,11 @@ def get_api_key_length() -> int:
 def get_rate_limit() -> str:
     """Gets the rate limit for all routes"""
     return os.getenv("RATE_LIMIT", "5/minute")
+
+
+def get_otp_verification_url() -> str:
+    """The URL where the form for verification of OTP for admin users is."""
+    return os.getenv("OTP_VERIFICATION_URL")
 
 
 def get_api_secret() -> str:
