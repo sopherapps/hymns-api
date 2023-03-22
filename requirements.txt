@@ -17,3 +17,4 @@ python-multipart==0.0.6
 pyotp~=2.8.0
 aiosmtplib~=2.0.1
 python-dotenv~=0.21.0
+pytest-asyncio==0.20.3
