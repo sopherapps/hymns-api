@@ -1,8 +1,8 @@
 """A collection of error types for this service"""
 
 
-class ValidationError(Exception):
-    """Exception returned when data is not of expected type or shape.
+class AuthenticationError(Exception):
+    """Exception returned when authentication fails.
 
     Args:
         msg: the msg
@@ -12,7 +12,7 @@ class ValidationError(Exception):
         self.msg = msg
 
     def __repr__(self):
-        return f"ValidationError: {self.msg}"
+        return f"AuthenticationError: {self.msg}"
 
     def __str__(self):
         return self.__repr__()

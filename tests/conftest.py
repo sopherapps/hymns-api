@@ -3,12 +3,15 @@ import shutil
 
 import pytest
 import pytest_asyncio
+from cryptography.fernet import Fernet
 from pytest_lazyfixture import lazy_fixture
 from fastapi.testclient import TestClient
+from typer.testing import CliRunner
 
 import api.models
 from api.routes import app
 from services import hymns
+from cli import initialize as cli_initialize
 from services.config import ServiceConfig, save_service_config
 from services.hymns.models import LineSection, Song, MusicalNote
 
@@ -127,7 +130,25 @@ def test_client(root_folder_path):
     db_path = os.path.join(root_folder_path, "test_db")
     os.environ["DB_PATH"] = db_path
     os.environ["ENABLE_RATE_LIMIT"] = "False"
+    os.environ["API_SECRET"] = Fernet.generate_key().decode()
+    os.environ["OTP_VERIFICATION_URL"] = app.url_path_for("verify_otp")
+    _setup_mail_config()
+
     yield TestClient(app)
+    delete_folder(db_path)
+
+
+@aio_pytest_fixture
+async def cli_runner(root_folder_path):
+    """the test client for the CLI part of the app"""
+    db_path = os.path.join(root_folder_path, "test_db")
+    os.environ["DB_PATH"] = db_path
+    os.environ["API_SECRET"] = Fernet.generate_key().decode()
+    os.environ["OTP_VERIFICATION_URL"] = app.url_path_for("verify_otp")
+    _setup_mail_config()
+    await cli_initialize(force=True)
+
+    yield CliRunner()
     delete_folder(db_path)
 
 
@@ -153,6 +174,9 @@ def test_client_and_rate_limit(root_folder_path, request):
     os.environ["DB_PATH"] = db_path
     os.environ["RATE_LIMIT"] = get_rate_limit_string(rate_limit)
     os.environ["ENABLE_RATE_LIMIT"] = "True"
+    os.environ["API_SECRET"] = Fernet.generate_key().decode()
+    os.environ["OTP_VERIFICATION_URL"] = app.url_path_for("verify_otp")
+    _setup_mail_config()
 
     yield TestClient(app), rate_limit
     # del app.state.limiter
@@ -168,3 +192,14 @@ def delete_folder(path: str):
 def get_rate_limit_string(num_per_second: int) -> str:
     """Converts a number of requests per second to the string notation for the slowapi library"""
     return f"{num_per_second} per 1 second"
+
+
+def _setup_mail_config():
+    """Sets up the configuration for the email server"""
+    os.environ["MAIL_USERNAME"] = "hymns@example.com"
+    os.environ["MAIL_PASSWORD"] = "some-passowrd"
+    os.environ["MAIL_FROM"] = "hymns@example.com"
+    os.environ["MAIL_PORT"] = "587"
+    os.environ["MAIL_SERVER"] = "some-server"
+    os.environ["MAIL_DEBUG"] = "1"
+    os.environ["MAIL_SUPPRESS_SEND"] = "1"

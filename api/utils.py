@@ -3,7 +3,7 @@ from typing import Any, Callable, TypeVar
 import funml as ml
 from fastapi import HTTPException, status
 
-from services import hymns
+import services
 
 
 T = TypeVar("T")
@@ -36,9 +36,11 @@ def _raise_http_error(exp: Exception):
     """
     code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    if isinstance(exp, hymns.errors.NotFoundError):
+    if isinstance(exp, services.errors.NotFoundError):
         code = status.HTTP_404_NOT_FOUND
-    elif isinstance(exp, hymns.errors.ValidationError):
+    elif isinstance(exp, services.hymns.errors.ValidationError):
         code = status.HTTP_400_BAD_REQUEST
+    elif isinstance(exp, services.auth.errors.AuthenticationError):
+        code = status.HTTP_403_FORBIDDEN
 
     raise HTTPException(status_code=code, detail=f"{exp}")

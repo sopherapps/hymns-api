@@ -24,9 +24,16 @@ class LanguageStore:
     numbers_store: AsyncStore
 
 
-@ml.record
 class HymnsService:
     """The Service for storing and manipulating hymns"""
 
     stores: dict[str, LanguageStore] = {}
     root_path: bytes | PathLike[bytes] | str
+
+    def __init__(
+        self,
+        root_path: bytes | PathLike[bytes] | str,
+        stores: dict[str, LanguageStore] = {},
+    ):
+        self.stores: dict[str, LanguageStore] = stores
+        self.root_path: bytes | PathLike[bytes] | str = root_path

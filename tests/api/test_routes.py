@@ -1,3 +1,4 @@
+import re
 import time
 from typing import List, Dict, Any
 
@@ -5,6 +6,7 @@ import funml as ml
 import pytest
 from fastapi.testclient import TestClient
 from api.models import Song
+from services import auth
 from tests.conftest import (
     api_songs_langs_fixture,
     languages,
@@ -13,17 +15,21 @@ from tests.conftest import (
 )
 
 
+otp_email_regex = re.compile(r"Your OTP for your latest login attempt is (\d+)")
+
+
 class AuthType(ml.Enum):
     API_KEY = None
     OAUTH2 = None
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("client, song, langs", api_songs_langs_fixture)
-def test_create_song(client: TestClient, song: Song, langs: List[str]):
+async def test_create_song(client: TestClient, song: Song, langs: List[str]):
     """create_song creates a song"""
 
     with client:
-        headers = _get_auth_headers(client, auth_type=AuthType.API_KEY)
+        headers = await _get_auth_headers(client)
 
         for lang in langs:
             new_song = Song(**{**song.dict(), "language": lang})
@@ -42,10 +48,11 @@ def test_create_song(client: TestClient, song: Song, langs: List[str]):
             )
 
 
-def test_get_song_detail(test_client: TestClient):
+@pytest.mark.asyncio
+async def test_get_song_detail(test_client: TestClient):
     """get_song_detail gets a song's details"""
     with test_client:
-        headers = _get_auth_headers(test_client, auth_type=AuthType.API_KEY)
+        headers = await _get_auth_headers(test_client)
 
         for lang in languages:
             for song in api_songs:
@@ -70,8 +77,9 @@ def test_get_song_detail(test_client: TestClient):
             assert response.json() == expected
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("client, song, langs", api_songs_langs_fixture)
-def test_update_song(client: TestClient, song: Song, langs: List[str]):
+async def test_update_song(client: TestClient, song: Song, langs: List[str]):
     """Updates the keys and or the lines of the song"""
     test_data = [
         dict(key="G#m", lines=[[dict(note="Am", words=f"{song.title} changed")]]),
@@ -91,7 +99,7 @@ def test_update_song(client: TestClient, song: Song, langs: List[str]):
     ]
 
     with client:
-        headers = _get_auth_headers(client, auth_type=AuthType.API_KEY)
+        headers = await _get_auth_headers(client)
 
         for new_data in test_data:
             for lang in langs:
@@ -117,10 +125,11 @@ def test_update_song(client: TestClient, song: Song, langs: List[str]):
                 )
 
 
-def test_delete_song(test_client: TestClient):
+@pytest.mark.asyncio
+async def test_delete_song(test_client: TestClient):
     """Deletes the song of the given song number"""
     with test_client:
-        headers = _get_auth_headers(test_client, auth_type=AuthType.API_KEY)
+        headers = await _get_auth_headers(test_client)
 
         for lang in languages:
             for song in api_songs:
@@ -140,7 +149,8 @@ def test_delete_song(test_client: TestClient):
                 assert response.status_code == 404
 
 
-def test_query_by_title(test_client: TestClient):
+@pytest.mark.asyncio
+async def test_query_by_title(test_client: TestClient):
     """Queries by title of the song"""
     song_data = dict(
         key="F",
@@ -175,7 +185,7 @@ def test_query_by_title(test_client: TestClient):
     ]
 
     with test_client:
-        headers = _get_auth_headers(test_client, auth_type=AuthType.API_KEY)
+        headers = await _get_auth_headers(test_client)
 
         for lang in languages:
             for num, title in nums_and_titles:
@@ -198,7 +208,8 @@ def test_query_by_title(test_client: TestClient):
                 assert response.json() == dict(data=expected, skip=skip, limit=limit)
 
 
-def test_query_by_number(test_client: TestClient):
+@pytest.mark.asyncio
+async def test_query_by_number(test_client: TestClient):
     """Queries by number of the song"""
     song_data = dict(
         key="F",
@@ -231,7 +242,7 @@ def test_query_by_number(test_client: TestClient):
     ]
 
     with test_client:
-        headers = _get_auth_headers(test_client, auth_type=AuthType.API_KEY)
+        headers = await _get_auth_headers(test_client)
 
         for lang in languages:
             for num, title in nums_and_titles:
@@ -254,21 +265,22 @@ def test_query_by_number(test_client: TestClient):
                 assert response.json() == dict(data=expected, skip=skip, limit=limit)
 
 
-def test_api_key(test_client: TestClient):
+@pytest.mark.asyncio
+async def test_api_key(test_client: TestClient):
     """Some routes expect an API key in the headers"""
     routes = [
         ("GET", "/english/find-by-number/1", {}, dict(skip=0, limit=0)),
         ("GET", "/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
         ("GET", "/english/1", {}, {}),
-        ("POST", "/", api_songs[0].dict(), {}),
-        ("PUT", "/english/1", api_songs[0].dict(), {}),
-        ("DELETE", "/english/1", api_songs[0].dict(), {}),
     ]
     with test_client:
         api_key = _get_api_key(test_client)
-        headers = {"x-api-key": api_key}
-        no_api_key_headers = {"Content-Type": "application/json"}
-        wrong_api_key_headers = {"x-api-key": f"{api_key[:-3]}you"}
+        jwt_token = await _get_oauth2_token(test_client)
+        default_headers = {"Authorization": f"Bearer {jwt_token}"}
+
+        headers = {**default_headers, "x-api-key": api_key}
+        no_api_key_headers = {**default_headers, "Content-Type": "application/json"}
+        wrong_api_key_headers = {**default_headers, "x-api-key": f"{api_key[:-3]}you"}
 
         for song in api_songs:
             payload = song.dict()
@@ -298,7 +310,54 @@ def test_api_key(test_client: TestClient):
             assert response.status_code in (200, 404)
 
 
-def test_rate_limit(test_client_and_rate_limit):
+@pytest.mark.asyncio
+async def test_oauth2_token(test_client: TestClient):
+    """Some routes expect an oauth2 JWT token in the headers"""
+    routes = [
+        ("POST", "/", api_songs[0].dict(), {}),
+        ("PUT", "/english/1", api_songs[0].dict(), {}),
+        ("DELETE", "/english/1", api_songs[0].dict(), {}),
+    ]
+    with test_client:
+        jwt_token = await _get_oauth2_token(test_client)
+        headers = {"Authorization": f"Bearer {jwt_token}"}
+        no_jwt_token_headers = {"Content-Type": "application/json"}
+        wrong_jwt_token_headers = {"Authorization": f"Bearer {jwt_token[:-3]}you"}
+
+        for song in api_songs:
+            payload = song.dict()
+            response = test_client.post("/", json=payload, headers=headers)
+            assert response.status_code == 200
+
+        for method, route, body, params in routes:
+            response = test_client.request(
+                method,
+                url=route,
+                json=body,
+                params=params,
+                headers=no_jwt_token_headers,
+            )
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Not authenticated"}
+
+            response = test_client.request(
+                method,
+                url=route,
+                json=body,
+                params=params,
+                headers=wrong_jwt_token_headers,
+            )
+            assert response.status_code == 403
+            assert response.json() == {"detail": "AuthenticationError: invalid token"}
+
+            response = test_client.request(
+                method, url=route, json=body, params=params, headers=headers
+            )
+            assert response.status_code in (200, 404)
+
+
+@pytest.mark.asyncio
+async def test_rate_limit(test_client_and_rate_limit):
     """All routes are protected by a rate limiter, whose rate is set using an environment variable"""
     client, max_reqs_per_sec = test_client_and_rate_limit
     routes = [
@@ -312,7 +371,7 @@ def test_rate_limit(test_client_and_rate_limit):
 
     with client:
         time.sleep(1)
-        headers = _get_auth_headers(client, auth_type=AuthType.API_KEY)
+        headers = await _get_auth_headers(client)
 
         for song in api_songs:
             payload = song.dict()
@@ -358,13 +417,12 @@ def _assert_song_has_content(
     assert response.json() == dict(number=number, translations={language: content})
 
 
-def _get_auth_headers(client, auth_type: AuthType):
+async def _get_auth_headers(client):
     """Gets the auth headers to use for the client"""
-    return (
-        ml.match(auth_type)
-        .case(AuthType.API_KEY, do=ml.val({"x-api-key": _get_api_key(client)}))
-        .case(AuthType.OAUTH2, do=ml.val({}))()
-    )
+    return {
+        "x-api-key": _get_api_key(client),
+        "Authorization": f"Bearer {await _get_oauth2_token(client)}",
+    }
 
 
 def _get_api_key(client: TestClient) -> str:
@@ -374,3 +432,40 @@ def _get_api_key(client: TestClient) -> str:
 
     data = response.json()
     return data["key"]
+
+
+async def _get_oauth2_token(client: TestClient) -> str:
+    """Gets the Oauth2 token to use to access the admin part of the API."""
+    # create new admin user
+    user = auth.models.UserDTO(
+        username="johndoe",
+        email="johndoe@example.com",
+        password="johnpassword",
+    )
+    resp = await auth.create_user(client.app.state.auth_service, user)
+    assert isinstance(resp, ml.Result.OK)
+
+    with client.app.state.auth_service.mail.record_messages() as outbox:
+        # login with user
+        login_request = {"username": user.username, "password": user.password}
+        response = client.post("/login", data=login_request)
+        assert response.status_code == 200
+        unverified_token = response.json()["access_token"]
+
+        # read email to get otp
+        assert len(outbox) >= 1
+        mail = outbox[-1]
+        message_parts = mail.get_payload()
+        message = message_parts[0].get_payload(decode=True)
+        charset = mail.get_content_charset("iso-8859-1")
+        decoded_msg = message.decode(charset, "replace")
+        otp = otp_email_regex.search(decoded_msg).group(1)
+
+    # verify OTP
+    otp_request = {"otp": otp}
+    headers = {"Authorization": f"Bearer {unverified_token}"}
+    response = client.post("/verify-otp", json=otp_request, headers=headers)
+    assert response.status_code == 200
+
+    # return JWT token
+    return response.json()["access_token"]

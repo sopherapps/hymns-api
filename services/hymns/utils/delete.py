@@ -2,7 +2,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from services.hymns.errors import ValidationError, NotFoundError
+import funml as ml
+
+from services.hymns.errors import ValidationError
+from ...errors import NotFoundError
 
 from .get import get_song_by_title_or_number
 
@@ -13,7 +16,7 @@ if TYPE_CHECKING:
 
 async def delete_from_all_stores(
     service: "HymnsService", title: str | None, number: int | None
-) -> list[Song]:
+) -> ml.IList[Song]:
     """Removes the song of given title or number from all language stores.
 
     Raises:
@@ -35,9 +38,10 @@ async def delete_from_all_stores(
             pass
 
     if len(songs) == 0:
-        raise NotFoundError(f"song title: {title} or number: {number}")
+        msg = f"song title '{title}'" if title is not None else f"song number {number}"
+        raise NotFoundError(msg)
 
-    return songs
+    return ml.l(*songs)
 
 
 async def delete_from_one_store(
@@ -58,9 +62,8 @@ async def delete_from_one_store(
     """
     song = await get_song_by_title_or_number(store, title=title, number=number)
     if song is None:
-        raise NotFoundError(
-            f"song title: '{title}' or number: {number} for language: '{store.language}'"
-        )
+        msg = f"song title: {title}" if title is not None else f"song number: {number}"
+        raise NotFoundError(f"{msg} for language: '{store.language}'")
 
     await _delete_from_titles_store(store, title=song.title)
     await _delete_from_numbers_store(store, number=song.number)

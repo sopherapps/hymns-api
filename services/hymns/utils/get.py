@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING
 
 import funml as ml
 from services.hymns.models import Song
-from ..errors import ValidationError, NotFoundError
+from ..errors import ValidationError
+from ...errors import NotFoundError
 
 if TYPE_CHECKING:
     from ..types import LanguageStore

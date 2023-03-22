@@ -244,7 +244,7 @@ class Application(BaseModel):
 
     key: str
 
-    def to_hymns(
+    def to_auth(
         self,
     ) -> auth.types.Application:
         """Returns the Application equivalent of the auth.types.Application passed to it"""
@@ -253,8 +253,63 @@ class Application(BaseModel):
         )
 
     @classmethod
-    def from_hymns(cls, application: auth.types.Application) -> "Application":
+    def from_auth(cls, application: auth.types.Application) -> "Application":
         """Returns the Application equivalent of the auth.types.Application passed to it"""
         return cls(
             key=application.key,
         )
+
+
+class LoginResponse(BaseModel):
+    """The response got from login"""
+
+    access_token: str
+    token_type: str
+    message: str
+
+    @classmethod
+    def from_auth(cls, resp: auth.models.LoginResponse) -> "LoginResponse":
+        """Returns the LoginResponse equivalent of the auth.models.LoginResponse passed to it"""
+        return cls(access_token=resp.token, token_type="bearer", message=resp.message)
+
+
+class OTPRequest(BaseModel):
+    """The One time password request sent to verify a login"""
+
+    otp: str
+
+
+class OTPResponse(BaseModel):
+    """The One time password response received after a successful OTP response"""
+
+    access_token: str
+    token_type: str
+
+    @classmethod
+    def from_auth(cls, resp: auth.models.OTPResponse) -> "OTPResponse":
+        """Returns the OTPResponse equivalent of the auth.models.OTPResponse passed to it"""
+        return cls(
+            access_token=resp.token,
+            token_type="bearer",
+        )
+
+
+class User(BaseModel):
+    """The user object for auth"""
+
+    username: str
+
+    @classmethod
+    def from_auth(cls, resp: auth.models.UserDTO) -> "User":
+        """Returns the User equivalent of the auth.models.UserDTO passed to it"""
+        return cls(
+            username=resp.username,
+        )
+
+
+class ChangePasswordRequest(BaseModel):
+    """The request sent when attempting to change the password"""
+
+    username: str
+    original_password: str
+    new_password: str
