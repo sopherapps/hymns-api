@@ -7,6 +7,8 @@ from .service import (
     verify_otp,
     change_password,
     create_user,
+    remove_user,
+    get_user_with_credentials,
 )
 
 __all__ = [
@@ -18,6 +20,8 @@ __all__ = [
     "login",
     "get_current_user",
     "create_user",
+    "remove_user",
+    "get_user_with_credentials",
     "verify_otp",
     "change_password",
     "errors",

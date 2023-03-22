@@ -45,7 +45,10 @@ def get_rate_limit() -> str:
 
 def get_otp_verification_url() -> str:
     """The URL where the form for verification of OTP for admin users is."""
-    return os.getenv("OTP_VERIFICATION_URL")
+    try:
+        return os.getenv("OTP_VERIFICATION_URL")
+    except KeyError:
+        raise ConfigurationError("environment variable 'OTP_VERIFICATION_URL' not set")
 
 
 def get_api_secret() -> str:

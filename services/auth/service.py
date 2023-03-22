@@ -252,11 +252,11 @@ async def login(
     Returns:
         ml.Result.OK(LoginResponse) if the username and password match or else ml.Result.ERR()
     """
-    user = await _get_user(service, username=username)
+    user = await get_user_with_credentials(
+        service, username=username, password=password
+    )
 
-    if isinstance(user, UserInDb) and is_password_match(
-        raw_password=password, hashed_password=user.password
-    ):
+    if user:
         user.login_attempts = 0
         await service.users_store.set(user.username, ml.to_json(user))
 
@@ -276,6 +276,18 @@ async def login(
         return ml.Result.OK(resp)
 
     return ml.Result.ERR(AuthenticationError("username and password don't match"))
+
+
+async def get_user_with_credentials(
+    service: AuthService, username: str, password: str
+) -> Optional[UserInDb]:
+    """Gets the user whose credentials are those that are given"""
+    user = await _get_user(service, username=username)
+
+    if isinstance(user, UserInDb) and is_password_match(
+        raw_password=password, hashed_password=user.password
+    ):
+        return user
 
 
 async def verify_otp(

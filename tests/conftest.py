@@ -6,10 +6,12 @@ import pytest_asyncio
 from cryptography.fernet import Fernet
 from pytest_lazyfixture import lazy_fixture
 from fastapi.testclient import TestClient
+from typer.testing import CliRunner
 
 import api.models
 from api.routes import app
 from services import hymns
+from cli import initialize as cli_initialize
 from services.config import ServiceConfig, save_service_config
 from services.hymns.models import LineSection, Song, MusicalNote
 
@@ -133,6 +135,20 @@ def test_client(root_folder_path):
     _setup_mail_config()
 
     yield TestClient(app)
+    delete_folder(db_path)
+
+
+@aio_pytest_fixture
+async def cli_runner(root_folder_path):
+    """the test client for the CLI part of the app"""
+    db_path = os.path.join(root_folder_path, "test_db")
+    os.environ["DB_PATH"] = db_path
+    os.environ["API_SECRET"] = Fernet.generate_key().decode()
+    os.environ["OTP_VERIFICATION_URL"] = app.url_path_for("verify_otp")
+    _setup_mail_config()
+    await cli_initialize(force=True)
+
+    yield CliRunner()
     delete_folder(db_path)
 
 
