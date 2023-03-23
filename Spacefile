@@ -6,10 +6,20 @@ micros:
     engine: python3.9
     primary: true
     path: "/"
+    include:
+      - api/
+      - cli/
+      - services/
+      - templates/
+      - errors.py
+      - main.py
+      - manage.py
+      - settings.py
+      - prod-requirements.txt
     public_routes:
       - "/*"
-    run: pip install -r requirements.txt && uvicorn main:app --port $PORT
-    dev: pip install -r requirements.txt && uvicorn main:app --port $PORT --reload
+    run: pip install -r prod-requirements.txt && uvicorn main:app --port $PORT
+    dev: pip install -r prod-requirements.txt && uvicorn main:app --port $PORT --reload
     presets:
       env:
         - name: DB_PATH
