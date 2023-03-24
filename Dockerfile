@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.11.2-alpine3.17
+FROM python:3.11.2-slim-bullseye
 WORKDIR /hymns-api
 COPY . .
 ENV API_SECRET="<API_SECRET>"
@@ -12,6 +12,7 @@ ENV MAIL_PORT="<MAIL_PORT>"
 ENV MAIL_SERVER="<MAIL_SERVER>"
 ENV MAIL_DEBUG="0"
 ENV MAIL_SUPPRESS_SEND="0"
-RUN pip install wheel setuptools pip --upgrade && pip install -r requirements.txt
+RUN pip install wheel setuptools pip --upgrade
+RUN pip install -r requirements.txt
 CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", ":8000", "main:app"]
 EXPOSE 8000
