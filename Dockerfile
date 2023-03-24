@@ -3,7 +3,6 @@
 FROM python:3.11.2-alpine3.17
 WORKDIR /hymns-api
 COPY . .
-ENV DB_PATH="/data/hymns_data/db"
 ENV API_SECRET="<API_SECRET>"
 ENV OTP_VERIFICATION_URL="https://<DOMAIN_NAME>/verify-otp"
 ENV MAIL_USERNAME="<MAIL_USERNAME>"

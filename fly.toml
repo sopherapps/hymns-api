@@ -10,10 +10,6 @@ processes = []
 [experimental]
   auto_rollback = true
 
-[mount]
-source = "hymns_data"
-destination = "/data"
-
 [[services]]
   http_checks = []
   internal_port = 8080
