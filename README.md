@@ -4,7 +4,7 @@
 
 ---
 
-**Documentation:** [https://hymns-api.sopherapps.com/docs](https://hymns-api.sopherapps.com/docs)
+**Documentation:** [https://hymnsapi.sopherapps.com/docs](https://hymnsapi.sopherapps.com/docs)
 
 --- 
 
