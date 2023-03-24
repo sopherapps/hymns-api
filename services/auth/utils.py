@@ -21,7 +21,7 @@ def generate_random_key(size: int) -> str:
     Returns:
         the generated key
     """
-    chars = string.ascii_letters + string.digits + string.punctuation
+    chars = string.ascii_letters + string.digits + r".=_"
     return "".join(random.choice(chars) for _ in range(size))
 
 
