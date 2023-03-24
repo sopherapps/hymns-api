@@ -109,10 +109,10 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
-- Run the API app
+- Run the API app. Ensure it is only one worker so that scdb may function as expected.
 
 ```shell
-gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b :8000 main:app
+gunicorn -w 1 -k uvicorn.workers.UvicornWorker -b :8000 main:app
 ```
 
 - Run the CLI app, and see the menu for the different commands

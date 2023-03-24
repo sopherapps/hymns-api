@@ -14,5 +14,5 @@ ENV MAIL_DEBUG="0"
 ENV MAIL_SUPPRESS_SEND="0"
 RUN pip install wheel setuptools pip --upgrade
 RUN pip install -r requirements.txt
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", ":8080", "main:app"]
+CMD ["gunicorn", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", ":8080", "main:app"]
 EXPOSE 8080
