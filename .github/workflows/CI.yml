@@ -53,8 +53,10 @@ jobs:
           sed -i 's|<MAIL_PORT>|${{ secrets.MAIL_PORT }|' $GITHUB_WORKSPACE/Dockerfile
           sed -i 's|<MAIL_SERVER>|${{ secrets.MAIL_SERVER }|' $GITHUB_WORKSPACE/Dockerfile
 
-      - name: Deploy to fly.io
+      - name: Setup fly.io
         uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to fly.io
         run: |
           fly scale count 1
           flyctl volumes create hymns_data --region jnb --size 3 --no-encryption --require-unique-zone
