@@ -58,7 +58,7 @@ jobs:
 
       - name: Deploy to fly.io
         run: |
-          fly scale count 1
+          flyctl scale count 1
           flyctl volumes create hymns_data --region jnb --size 3 --no-encryption --require-unique-zone
           flyctl deploy --remote-only -r jnb
         env:
