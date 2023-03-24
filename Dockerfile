@@ -12,6 +12,6 @@ ENV MAIL_PORT="<MAIL_PORT>"
 ENV MAIL_SERVER="<MAIL_SERVER>"
 ENV MAIL_DEBUG="0"
 ENV MAIL_SUPPRESS_SEND="0"
-RUN pip3 install --upgrade pip3 && pip3 install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", ":8000", "main:app"]
 EXPOSE 8000
