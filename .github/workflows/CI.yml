@@ -45,13 +45,13 @@ jobs:
       - name: Setup Dockerfile
         run: |
           cd $GITHUB_WORKSPACE
-          sed -i 's|<API_SECRET>|${{ secrets.API_SECRET }|' $GITHUB_WORKSPACE/Dockerfile
-          sed -i 's|<DOMAIN_NAME>|${{ secrets.DOMAIN_NAME }|' $GITHUB_WORKSPACE/Dockerfile
-          sed -i 's|<MAIL_USERNAME>|${{ secrets.MAIL_USERNAME }|' $GITHUB_WORKSPACE/Dockerfile
-          sed -i 's|<MAIL_PASSWORD>|${{ secrets.MAIL_PASSWORD }|' $GITHUB_WORKSPACE/Dockerfile
-          sed -i 's|<MAIL_FROM>|${{ secrets.MAIL_FROM }|' $GITHUB_WORKSPACE/Dockerfile
-          sed -i 's|<MAIL_PORT>|${{ secrets.MAIL_PORT }|' $GITHUB_WORKSPACE/Dockerfile
-          sed -i 's|<MAIL_SERVER>|${{ secrets.MAIL_SERVER }|' $GITHUB_WORKSPACE/Dockerfile
+          sed -i 's|<API_SECRET>|${{ secrets.API_SECRET }}|' $GITHUB_WORKSPACE/Dockerfile
+          sed -i 's|<DOMAIN_NAME>|${{ secrets.DOMAIN_NAME }}|' $GITHUB_WORKSPACE/Dockerfile
+          sed -i 's|<MAIL_USERNAME>|${{ secrets.MAIL_USERNAME }}|' $GITHUB_WORKSPACE/Dockerfile
+          sed -i 's|<MAIL_PASSWORD>|${{ secrets.MAIL_PASSWORD }}|' $GITHUB_WORKSPACE/Dockerfile
+          sed -i 's|<MAIL_FROM>|${{ secrets.MAIL_FROM }}|' $GITHUB_WORKSPACE/Dockerfile
+          sed -i 's|<MAIL_PORT>|${{ secrets.MAIL_PORT }}|' $GITHUB_WORKSPACE/Dockerfile
+          sed -i 's|<MAIL_SERVER>|${{ secrets.MAIL_SERVER }}|' $GITHUB_WORKSPACE/Dockerfile
 
       - name: Setup fly.io
         uses: superfly/flyctl-actions/setup-flyctl@master
