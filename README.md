@@ -106,7 +106,7 @@ pip install -r requirements.txt
 - Run the API app
 
 ```shell
-uvicorn main:app --reload
+gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b :8000 main:app
 ```
 
 - Run the CLI app, and see the menu for the different commands

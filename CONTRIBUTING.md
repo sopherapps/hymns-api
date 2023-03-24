@@ -77,7 +77,7 @@ By contributing, you agree that your contributions will be licensed under its MI
 - Install the dependencies
 
   ```bash
-  pip install -r requirements.txt
+  pip install -r dev-requirements.txt
   ```
 
 - Run the pre-commit installation
