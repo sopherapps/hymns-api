@@ -2,6 +2,12 @@
 
 ![CI](https://github.com/sopherapps/hymns-api/actions/workflows/CI.yml/badge.svg)
 
+---
+
+**Documentation:** [https://hymns-api.sopherapps.com/docs](https://hymns-api.sopherapps.com/docs)
+
+--- 
+
 This is a general API that can host hymns/songs including their musical notation.
 
 ## Notable Features:
