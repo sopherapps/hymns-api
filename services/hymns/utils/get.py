@@ -28,7 +28,7 @@ async def get_song_by_title(store: "LanguageStore", title: str) -> Song:
 
     if payload is None:
         raise NotFoundError(
-            f"song of title: '{title}' not found for language: '{store.language}'"
+            f"song of title: '{title}' for language: '{store.language}'"
         )
 
     song = ml.from_json(type_=Song, value=payload)

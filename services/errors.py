@@ -12,7 +12,7 @@ class NotFoundError(Exception):
         self.arg = arg
 
     def __repr__(self):
-        return f"NotFoundError: Not found {self.arg}"
+        return f"NotFoundError: {self.arg}"
 
     def __str__(self):
         return self.__repr__()
