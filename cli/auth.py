@@ -14,16 +14,17 @@ otp_verification_url: Optional[str] = None
 
 async def initialize(force: bool = False):
     """Initializes the auth service"""
-    db_path = settings.get_db_path()
     global hymns_service_conf
     if force or hymns_service_conf is None:
         hymns_service_conf = settings.get_hymns_service_config()
-        await config.save_service_config(db_path, hymns_service_conf)
+        await config.save_service_config(
+            settings.get_config_db_uri(), hymns_service_conf
+        )
 
     global auth_service
     if force or auth_service is None:
         auth_service = await auth.initialize(
-            uri=settings.get_db_path(),
+            uri=settings.get_auth_db_uri(),
             key_size=settings.get_api_key_length(),
             api_secret=settings.get_api_secret(),
             jwt_ttl=settings.get_jwt_ttl_in_sec(),

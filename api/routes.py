@@ -83,7 +83,9 @@ async def _get_current_user(token: str = Depends(oauth2_scheme)) -> UserDTO:
 @app.on_event("startup")
 async def start():
     """Initializes the hymns service"""
-    db_path = settings.get_db_path()
+    hymns_db_uri = settings.get_hymns_db_uri()
+    auth_db_uri = settings.get_auth_db_uri()
+    config_db_uri = settings.get_config_db_uri()
     hymns_service_conf = settings.get_hymns_service_config()
     api_key_length = settings.get_api_key_length()
     api_secret = settings.get_api_secret()
@@ -93,19 +95,19 @@ async def start():
     mail_sender = settings.get_auth_email_sender()
     otp_verification_url = settings.get_otp_verification_url()
 
-    await config.save_service_config(db_path, hymns_service_conf)
+    await config.save_service_config(config_db_uri, hymns_service_conf)
 
     global app
 
     # hymns service
     global hymns_service
-    hymns_service = await hymns.initialize(db_path)
+    hymns_service = await hymns.initialize(hymns_db_uri)
     tests.services.scdb.conftest.hymns_service = hymns_service
 
     # auth service
     global auth_service
     auth_service = await auth.initialize(
-        uri=db_path,
+        uri=auth_db_uri,
         key_size=api_key_length,
         api_secret=api_secret,
         jwt_ttl=jwt_ttl,
