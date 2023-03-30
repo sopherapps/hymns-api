@@ -38,22 +38,6 @@ When you are ready, look at the [CONTRIBUTIONS GUIDELINES](./CONTRIBUTING.md)
 - [pyotp](https://pyauth.github.io/pyotp/) - for one time passwords
 - [fastapi-mail](https://sabuhish.github.io/fastapi-mail/) - for sending emails
 
-### Major Design Decisions
-
-- Each translation has its own scdb database, for scalability.
-- The `user` records are in their own scdb database, for scalability.
-- Access to different databases is done concurrently, for more speed.
-- All business logic is put in appropriate services in the `services` folder
-- All API related logic is in the `api` package, entry point being `main.py` in root folder.
-- All CLI(command line interface) related logic is in the `cli` package, 
-  entry point being `manage.py` in root folder.
-- Any shared utility functions are found in the `utils` package or module in the package where
-  they are needed e.g. services can have its own `utils`, api can also have its own `utils`,
-  even the entire project can have its own `utils`.
-- The `tests` package mirrors the folder structure followed by the project, 
-  but with `test_` prefixes on the module names.
-
-
 ## Settings
 
 | Environment Variable    | Meaning                                                                                | Default           |

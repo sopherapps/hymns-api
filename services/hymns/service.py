@@ -8,7 +8,7 @@ from services.hymns.utils.get import (
     get_song_by_number as get_raw_song_by_number,
     get_song_by_title as get_raw_song_by_title,
 )
-from services.hymns.utils.init import initialize_language_stores
+from services.hymns.utils.init import initialize_many_language_stores
 from services.hymns.utils.save import save_song
 from services.hymns.utils.search import (
     query_store_by_title,
@@ -27,10 +27,10 @@ async def initialize(root_path: bytes | str) -> "HymnsService":
         root_path: the path to the stores for the hymns service
 
     Returns:
-        the HymnsService whose configuration is at the root_path
+        the HymnsService whose configuration is at the store_uri
     """
     conf = await get_service_config(root_path)
-    stores = await initialize_language_stores(root_path, conf=conf)
+    stores = initialize_many_language_stores(root_path, conf=conf)
     return HymnsService(root_path=root_path, stores=stores)
 
 

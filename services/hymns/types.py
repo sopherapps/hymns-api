@@ -4,7 +4,9 @@ from __future__ import annotations
 from os import PathLike
 
 import funml as ml
-from py_scdb import AsyncStore
+
+from services.config import ServiceConfig
+from services.store.base import Store
 
 
 @ml.record
@@ -15,25 +17,28 @@ class LanguageStore:
     the song numbers are the keys.
 
     Attributes:
-        titles_store: the AsyncStore whose keys are the song titles
-        numbers_store: the AsyncStore whose keys are the song numbers
+        titles_store: the Store whose keys are the song titles
+        numbers_store: the Store whose keys are the song numbers
     """
 
     language: str
-    titles_store: AsyncStore
-    numbers_store: AsyncStore
+    titles_store: Store
+    numbers_store: Store
 
 
 class HymnsService:
     """The Service for storing and manipulating hymns"""
 
     stores: dict[str, LanguageStore] = {}
-    root_path: bytes | PathLike[bytes] | str
+    store_uri: bytes | PathLike[bytes] | str
+    conf: ServiceConfig
 
     def __init__(
         self,
         root_path: bytes | PathLike[bytes] | str,
         stores: dict[str, LanguageStore] = {},
+        conf: ServiceConfig = ServiceConfig(),
     ):
         self.stores: dict[str, LanguageStore] = stores
-        self.root_path: bytes | PathLike[bytes] | str = root_path
+        self.store_uri: bytes | PathLike[bytes] | str = root_path
+        self.conf = conf

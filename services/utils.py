@@ -1,12 +1,7 @@
-"""Contains the utility functions shared across services"""
-from __future__ import annotations
+"""Utilities common to all services"""
 
-from os import path
-
-
-from os import PathLike
+from pydantic import BaseModel
 
 
-def get_store_path(root_path: bytes | PathLike[bytes] | str, name: str) -> str:
-    """Gets the path to the store given a root path"""
-    return path.join(root_path, name)
+class Config(BaseModel):
+    """Base class for all configs"""

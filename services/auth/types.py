@@ -2,14 +2,16 @@
 import fastapi_mail
 import funml as ml
 from cryptography.fernet import Fernet
-from py_scdb import AsyncStore
+from pydantic import BaseModel
+
+from services.store.base import Store
 
 
 class AuthService:
     def __init__(
         self,
-        auth_store: AsyncStore,
-        users_store: AsyncStore,
+        auth_store: Store,
+        users_store: Store,
         api_secret: str,
         key_size: int,
         fernet: Fernet,
@@ -29,8 +31,7 @@ class AuthService:
         self.mail_sender = mail_sender
 
 
-@ml.record
-class Application:
+class Application(BaseModel):
     """An application registered to interface with the API
 
     Intentionally have no data associated with an application

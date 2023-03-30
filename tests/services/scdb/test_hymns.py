@@ -7,8 +7,7 @@ from services.hymns.errors import ValidationError
 from services.errors import NotFoundError
 from services.hymns.models import MusicalNote, Song, LineSection, PaginatedResponse
 from services.hymns.types import HymnsService
-from services.hymns.utils.shared import note_to_str
-from ..conftest import songs_fixture, songs_langs_fixture, languages
+from tests.services.scdb.conftest import songs_fixture, songs_langs_fixture, languages
 
 
 @pytest.mark.asyncio
@@ -287,38 +286,6 @@ async def test_query_song_by_number(hymns_service: HymnsService):
             assert res == ml.Result.OK(
                 PaginatedResponse(data=expected, skip=skip, limit=limit)
             )
-
-
-def test_note_to_str():
-    """note_to_str converts a MusicalNote into a string"""
-    test_data = [
-        (MusicalNote.C_MAJOR, "C"),
-        (MusicalNote.C_MINOR, "Cm"),
-        (MusicalNote.C_SHARP_MAJOR, "C#"),
-        (MusicalNote.C_SHARP_MINOR, "C#m"),
-        (MusicalNote.D_MAJOR, "D"),
-        (MusicalNote.D_SHARP_MAJOR, "D#"),
-        (MusicalNote.D_SHARP_MINOR, "D#m"),
-        (MusicalNote.E_MAJOR, "E"),
-        (MusicalNote.E_MINOR, "Em"),
-        (MusicalNote.F_MAJOR, "F"),
-        (MusicalNote.F_MINOR, "Fm"),
-        (MusicalNote.F_SHARP_MAJOR, "F#"),
-        (MusicalNote.F_SHARP_MINOR, "F#m"),
-        (MusicalNote.G_MAJOR, "G"),
-        (MusicalNote.G_MINOR, "Gm"),
-        (MusicalNote.G_SHARP_MAJOR, "G#"),
-        (MusicalNote.G_SHARP_MINOR, "G#m"),
-        (MusicalNote.A_MAJOR, "A"),
-        (MusicalNote.A_MINOR, "Am"),
-        (MusicalNote.A_SHARP_MAJOR, "A#"),
-        (MusicalNote.A_SHARP_MINOR, "A#m"),
-        (MusicalNote.B_MAJOR, "B"),
-        (MusicalNote.B_MINOR, "Bm"),
-    ]
-
-    for item, expected in test_data:
-        assert note_to_str(item) == expected
 
 
 async def _assert_song_exists(service, song):

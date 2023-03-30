@@ -1,8 +1,7 @@
-import funml as ml
+from pydantic import BaseModel
 
 
-@ml.record
-class UserDTO:
+class UserDTO(BaseModel):
     username: str
     email: str
     password: str
@@ -12,8 +11,7 @@ class UserDTO:
         return UserDTO(username=user.username, email=user.email, password=user.password)
 
 
-@ml.record
-class UserInDb:
+class UserInDb(BaseModel):
     username: str
     email: str  # encrypted
     password: str  # hashed
@@ -22,19 +20,18 @@ class UserInDb:
     login_attempts: int
 
 
-@ml.record
-class LoginResponse:
-    token: str
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
     message: str
 
 
-@ml.record
-class OTPResponse:
-    token: str
+class OTPResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
 
-@ml.record
-class ChangePasswordRequest:
+class ChangePasswordRequest(BaseModel):
     """The request sent when attempting to change the password"""
 
     original_password: str

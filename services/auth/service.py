@@ -6,9 +6,10 @@ import fastapi_mail
 import funml as ml
 import pyotp
 from cryptography.fernet import Fernet
+from pydantic import BaseModel
 
 from services.auth.types import AuthService, Application
-from services.config import get_auth_store, get_users_store
+from services.config import get_auth_store, get_users_store, get_service_config
 from .errors import AuthenticationError
 from .models import UserInDb, LoginResponse, UserDTO, ChangePasswordRequest, OTPResponse
 from .utils import (
@@ -26,7 +27,7 @@ _ALGORITHM = "HS256"
 
 
 async def initialize(
-    root_path: Union[bytes, str],
+    uri: Union[bytes, str],
     key_size: int,
     api_secret: str,
     jwt_ttl: float,
@@ -37,7 +38,7 @@ async def initialize(
     """Initializes the auth service given the root path to the configuration store.
 
     Args:
-        root_path: the path to the stores for the hymns service
+        uri: the path to the stores for the hymns service
         key_size: the size of the API key to be used
         api_secret: the API secret for handling cryptographic things
         jwt_ttl: time-to-live for the JWT in seconds
@@ -46,10 +47,11 @@ async def initialize(
         mail_sender: the name to be added to the emails as sender in the 'best regards' section
 
     Returns:
-        the HymnsService whose configuration is at the root_path
+        the HymnsService whose configuration is at the store_uri
     """
-    auth_store = await get_auth_store(root_path)
-    users_store = await get_users_store(root_path)
+    service_conf = await get_service_config(uri)
+    auth_store = get_auth_store(service_conf=service_conf, uri=uri)
+    users_store = get_users_store(service_conf=service_conf, uri=uri)
     fernet = Fernet(api_secret)
     return AuthService(
         auth_store=auth_store,
@@ -81,12 +83,12 @@ async def register_app(service: AuthService) -> ml.Result:
     """
     try:
         key = generate_random_key(service.key_size)
-        _app = await service.auth_store.get(key)
+        _app = await service.auth_store.get(BaseModel, key)
 
         if _app is not None:
             raise Exception(f"failed to create unique application key")
 
-        await service.auth_store.set(key, "")
+        await service.auth_store.set(key, BaseModel())
 
         return ml.Result.OK(Application(key=key))
     except Exception as exp:
@@ -103,7 +105,7 @@ async def is_valid_api_key(service: AuthService, key: str) -> bool:
     Returns:
         true if key is valid else false
     """
-    res = await service.auth_store.get(key)
+    res = await service.auth_store.get(BaseModel, key)
     return res is not None
 
 
@@ -157,7 +159,7 @@ async def create_user(service: AuthService, user: UserDTO) -> ml.Result:
         login_attempts=0,
     )
     try:
-        await service.users_store.set(user.username, ml.to_json(user_in_db))
+        await service.users_store.set(user.username, user_in_db)
         return ml.Result.OK(user)
     except Exception as exp:
         return ml.Result.ERR(exp)
@@ -258,7 +260,7 @@ async def login(
 
     if user:
         user.login_attempts = 0
-        await service.users_store.set(user.username, ml.to_json(user))
+        await service.users_store.set(user.username, user)
 
         otp = _generate_otp(service, user=user)
         await _send_email(
@@ -270,7 +272,7 @@ async def login(
 
         unverified_jwt = _generate_jwt(service, username=user.username, verified=False)
         resp = LoginResponse(
-            token=unverified_jwt,
+            access_token=unverified_jwt,
             message=f"an OTP was sent to your email. Submit it at {otp_verification_url}",
         )
         return ml.Result.OK(resp)
@@ -322,7 +324,7 @@ async def verify_otp(
             await _update_user(service, user=user, login_attempts=0)
 
             verified_jwt = _generate_jwt(service, username=user.username, verified=True)
-            return ml.Result.OK(OTPResponse(token=verified_jwt))
+            return ml.Result.OK(OTPResponse(access_token=verified_jwt))
     except Exception as exp:
         return ml.Result.ERR(exp)
 
@@ -355,8 +357,9 @@ async def _update_user(service: AuthService, user: UserInDb, **kwargs) -> UserIn
     Returns:
         the updated user
     """
-    new_user = UserInDb(**{**ml.to_dict(user), **kwargs, "username": user.username})
-    await service.users_store.set(user.username, ml.to_json(new_user))
+    new_data = {**user.dict(), **kwargs, "username": user.username}
+    new_user = UserInDb(**new_data)
+    await service.users_store.set(user.username, new_user)
     return new_user
 
 
@@ -481,8 +484,5 @@ async def _get_user(service: AuthService, username: str) -> Optional[UserInDb]:
     Returns:
         user of the given username or None if there is no user
     """
-    raw_data: Optional[str] = await service.users_store.get(username)
-    if raw_data is None:
-        return None
-
-    return ml.from_json(UserInDb, raw_data)
+    user: Optional[UserInDb] = await service.users_store.get(UserInDb, username)
+    return user

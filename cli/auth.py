@@ -23,7 +23,7 @@ async def initialize(force: bool = False):
     global auth_service
     if force or auth_service is None:
         auth_service = await auth.initialize(
-            root_path=settings.get_db_path(),
+            uri=settings.get_db_path(),
             key_size=settings.get_api_key_length(),
             api_secret=settings.get_api_secret(),
             jwt_ttl=settings.get_jwt_ttl_in_sec(),
@@ -41,7 +41,7 @@ async def create_account(username: str, email: str, password: str):
     """Creates a new admin account"""
     await initialize()
 
-    user = await auth_service.users_store.get(username)
+    user = await auth_service.users_store.get(UserDTO, username)
     if user is not None:
         raise ValueError("user already exists")
 
