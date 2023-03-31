@@ -37,3 +37,17 @@ class ChangePasswordRequest(BaseModel):
     original_password: str
     new_password: str
     username: str
+
+
+class Application(BaseModel):
+    """An application registered to interface with the API
+
+    Intentionally have no data associated with an application
+    such that in case of a breach, no client data is at risk.
+    Otherwise we would have used a Oauth2: say a request sent
+    to a login link with API key and client secret, then a JWT
+    access token to be used per request is generated and returned
+    to client.
+    """
+
+    key: str

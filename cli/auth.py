@@ -6,10 +6,12 @@ import settings
 from services import auth, config
 from services.auth.models import UserDTO, ChangePasswordRequest
 from services.auth.types import AuthService
+from services.store import Store
 
 auth_service: Optional[AuthService] = None
 hymns_service_conf: Optional[config.ServiceConfig] = None
 otp_verification_url: Optional[str] = None
+is_initialized: bool = False
 
 
 async def initialize(force: bool = False):
@@ -36,6 +38,10 @@ async def initialize(force: bool = False):
     global otp_verification_url
     if force or otp_verification_url is None:
         otp_verification_url = settings.get_otp_verification_url()
+
+    global is_initialized
+    if force or not is_initialized:
+        await Store.setup_stores()
 
 
 async def create_account(username: str, email: str, password: str):
@@ -92,6 +98,11 @@ async def login(username: str, password: str):
         otp_verification_url=otp_verification_url,
     )
     return _handle_result(res)
+
+
+async def shutdown():
+    """Gracefully shuts down after the app is finished"""
+    await Store.destroy_stores()
 
 
 def _handle_result(res: ml.Result):

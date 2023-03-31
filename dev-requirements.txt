@@ -19,3 +19,7 @@ pyotp~=2.8.0
 aiosmtplib~=2.0.1
 python-dotenv~=0.21.0
 pytest-asyncio==0.20.3
+PyMySQL==1.0.3
+SQLAlchemy[asyncio]==2.0.7
+asyncpg==0.27.0
+pymongo==4.3.3

@@ -2,7 +2,8 @@ from typing import List, Optional, Dict
 
 from pydantic import BaseModel
 
-from services.hymns.models import LineSection, Song, MusicalNote
+from services.hymns.models import LineSection, Song
+from services.types import MusicalNote
 
 
 class PartialSong(BaseModel):

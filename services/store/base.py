@@ -1,11 +1,11 @@
 """module containing the abstract classes for stores and their configuration"""
 from abc import abstractmethod
-from typing import Optional, List, Tuple, Dict, Type, TypeVar
+from typing import Optional, List, Dict, Type, TypeVar
 
 from pydantic import BaseModel
 
 from errors import ConfigurationError
-from services.store.utils import get_store_type
+from services.store.utils.uri import get_store_type
 from services.utils import Config
 
 T = TypeVar("T", bound=BaseModel)
@@ -40,6 +40,31 @@ class Store:
             return store_cls(uri=uri, name=name, options=store_conf)
         except KeyError:
             raise ConfigurationError(f"store of type: {store_type} does not exist")
+
+    @staticmethod
+    async def setup_stores():
+        """Sets up all stores that have been added to the registry of this Store"""
+        for store_cls in Store._registry.values():
+            await store_cls._initialize_store()
+
+    @staticmethod
+    async def destroy_stores():
+        """Destroys all stores that have been added to the registry of this Store"""
+        cls_names = [*Store._registry.keys()]
+        for cls_name in cls_names:
+            await Store._registry[cls_name]._clean_up()
+
+    @staticmethod
+    @abstractmethod
+    async def _clean_up():
+        """Cleans up all store instances"""
+        raise NotImplementedError("clean_up not implemented")
+
+    @staticmethod
+    @abstractmethod
+    async def _initialize_store():
+        """Initializes the entire store"""
+        raise NotImplementedError("clean_up not implemented")
 
     @abstractmethod
     async def set(self, k: str, v: BaseModel, **kwargs) -> None:

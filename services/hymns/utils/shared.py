@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import funml as ml
 
 from ...errors import NotFoundError
-from services.hymns.models import MusicalNote
+from ...types import MusicalNote
 
 if TYPE_CHECKING:
     from ..types import HymnsService

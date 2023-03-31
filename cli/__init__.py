@@ -1,4 +1,11 @@
-from .auth import change_password, create_account, delete_account, login, initialize
+from .auth import (
+    change_password,
+    create_account,
+    delete_account,
+    login,
+    initialize,
+    shutdown,
+)
 
 __all__ = [
     "change_password",
@@ -6,4 +13,5 @@ __all__ = [
     "delete_account",
     "login",
     "initialize",
+    "shutdown",
 ]

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from os import path
-from typing import List, Tuple, Dict, Any, Optional, Type, TypeVar
+from typing import List, Optional, Type, TypeVar
 
 import py_scdb
 from pydantic import BaseModel
@@ -51,3 +51,11 @@ class ScdbStore(Store):
 
     async def clear(self) -> None:
         return await self.__store.clear()
+
+    @staticmethod
+    async def _clean_up():
+        pass
+
+    @staticmethod
+    async def _initialize_store():
+        pass

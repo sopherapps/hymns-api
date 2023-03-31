@@ -8,10 +8,17 @@ import pyotp
 from cryptography.fernet import Fernet
 from pydantic import BaseModel
 
-from services.auth.types import AuthService, Application
+from services.auth.types import AuthService
 from services.config import get_auth_store, get_users_store, get_service_config
 from .errors import AuthenticationError
-from .models import UserInDb, LoginResponse, UserDTO, ChangePasswordRequest, OTPResponse
+from .models import (
+    UserInDb,
+    LoginResponse,
+    UserDTO,
+    ChangePasswordRequest,
+    OTPResponse,
+    Application,
+)
 from .utils import (
     generate_random_key,
     is_password_match,

@@ -6,7 +6,8 @@ import pytest
 import pytest_asyncio
 
 from services.config import ServiceConfig
-from services.hymns.models import LineSection, MusicalNote, Song
+from services.hymns.models import LineSection, Song
+from services.types import MusicalNote
 
 aio_pytest_fixture = getattr(pytest_asyncio, "fixture", pytest.fixture())
 

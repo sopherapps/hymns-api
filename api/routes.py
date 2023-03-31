@@ -30,9 +30,10 @@ from services.auth.models import (
     LoginResponse,
     OTPResponse,
     ChangePasswordRequest,
+    Application,
 )
-from services.auth.types import Application
 from services.hymns.models import PaginatedResponse
+from services.store import Store
 
 api_key_header = APIKeyHeader(name="x-api-key")
 
@@ -124,6 +125,16 @@ async def start():
         default_limits=[settings.get_rate_limit()],
         enabled=settings.get_is_rate_limit_enabled(),
     )
+
+    # Initialize all stores
+    await Store.setup_stores()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Shuts down the application"""
+    # Shut down all stores
+    await Store.destroy_stores()
 
 
 @app.post("/register", response_model=Application)

@@ -45,5 +45,14 @@ def change_password(
     typer.echo("password changed successfully")
 
 
+def shutdown():
+    """Gracefully shuts down the app"""
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(cli.shutdown())
+
+
 if __name__ == "__main__":
-    app()
+    try:
+        app()
+    finally:
+        shutdown()

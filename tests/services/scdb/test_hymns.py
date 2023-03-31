@@ -5,7 +5,8 @@ import pytest
 from services import hymns
 from services.hymns.errors import ValidationError
 from services.errors import NotFoundError
-from services.hymns.models import MusicalNote, Song, LineSection, PaginatedResponse
+from services.hymns.models import Song, LineSection, PaginatedResponse
+from services.types import MusicalNote
 from services.hymns.types import HymnsService
 from tests.services.scdb.conftest import songs_fixture, songs_langs_fixture, languages
 
