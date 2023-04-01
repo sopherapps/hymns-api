@@ -23,7 +23,7 @@ async def query_store_by_title(
     Returns:
         a list of matching songs for the given search term in the given store
     """
-    return await store.titles_store.search(Song, term=q, skip=skip, limit=limit)
+    return await store.titles_store.search(term=q, skip=skip, limit=limit)
 
 
 async def query_store_by_number(
@@ -40,4 +40,4 @@ async def query_store_by_number(
     Returns:
         a list of matching songs for the given search term in the given store
     """
-    return await store.numbers_store.search(Song, term=f"{q}", skip=skip, limit=limit)
+    return await store.numbers_store.search(term=f"{q}", skip=skip, limit=limit)

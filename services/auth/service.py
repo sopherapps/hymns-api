@@ -90,14 +90,15 @@ async def register_app(service: AuthService) -> ml.Result:
     """
     try:
         key = generate_random_key(service.key_size)
-        _app = await service.auth_store.get(BaseModel, key)
+        _app = await service.auth_store.get(key)
 
         if _app is not None:
             raise Exception(f"failed to create unique application key")
 
-        await service.auth_store.set(key, BaseModel())
+        _app = Application(key=key)
+        await service.auth_store.set(key, _app)
 
-        return ml.Result.OK(Application(key=key))
+        return ml.Result.OK(_app)
     except Exception as exp:
         return ml.Result.ERR(exp)
 
@@ -112,7 +113,7 @@ async def is_valid_api_key(service: AuthService, key: str) -> bool:
     Returns:
         true if key is valid else false
     """
-    res = await service.auth_store.get(BaseModel, key)
+    res = await service.auth_store.get(key)
     return res is not None
 
 
@@ -216,13 +217,12 @@ async def remove_user(service: AuthService, username: str) -> ml.Result:
         an ml.Result.OK(UserDTO) with the newly deleted user or an ml.Result.ERR if an error occurs
     """
     try:
-        user = await _get_user(service, username=username)
+        users = await service.users_store.delete(username)
 
-        if user is None:
+        if len(users) == 0:
             raise NotFoundError(username)
 
-        await service.users_store.delete(username)
-        return ml.Result.OK(UserDTO.from_user_in_db(user))
+        return ml.Result.OK(UserDTO.from_user_in_db(users[0]))
     except Exception as exp:
         return ml.Result.ERR(exp)
 
@@ -491,5 +491,5 @@ async def _get_user(service: AuthService, username: str) -> Optional[UserInDb]:
     Returns:
         user of the given username or None if there is no user
     """
-    user: Optional[UserInDb] = await service.users_store.get(UserInDb, username)
+    user: Optional[UserInDb] = await service.users_store.get(username)
     return user

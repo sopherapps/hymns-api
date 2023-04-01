@@ -1,12 +1,16 @@
 """The RESTful API and the admin site
 """
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from fastapi import FastAPI, Query, Security, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
+from fastapi.requests import Request
+
+import funml as ml
+from fastapi.responses import Response
 
 import settings
 import tests.services.scdb.conftest
@@ -16,7 +20,7 @@ from api.models import (
     PartialSong,
     OTPRequest,
 )
-from api.utils import try_to
+from api.utils import try_to, raise_http_error
 from services import hymns, config, auth
 
 from services.auth import is_valid_api_key
@@ -126,15 +130,19 @@ async def start():
         enabled=settings.get_is_rate_limit_enabled(),
     )
 
-    # Initialize all stores
-    await Store.setup_stores()
-
 
 @app.on_event("shutdown")
 async def shutdown():
     """Shuts down the application"""
     # Shut down all stores
     await Store.destroy_stores()
+
+
+# @app.middleware("http")
+# async def extract_result(request: Request, call_next):
+#     response = await call_next(request)
+#     response.body = try_to(lambda v: v)(response.body)
+#     return response
 
 
 @app.post("/register", response_model=Application)
@@ -254,7 +262,7 @@ async def update_song(
     return transform(res)
 
 
-@app.delete("/{language}/{number}", response_model=Song)
+@app.delete("/{language}/{number}", response_model=List[Song])
 async def delete_song(
     language: str, number: int, user: UserDTO = Depends(_get_current_user)
 ):

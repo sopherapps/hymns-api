@@ -11,7 +11,6 @@ from services.store import Store
 auth_service: Optional[AuthService] = None
 hymns_service_conf: Optional[config.ServiceConfig] = None
 otp_verification_url: Optional[str] = None
-is_initialized: bool = False
 
 
 async def initialize(force: bool = False):
@@ -39,16 +38,12 @@ async def initialize(force: bool = False):
     if force or otp_verification_url is None:
         otp_verification_url = settings.get_otp_verification_url()
 
-    global is_initialized
-    if force or not is_initialized:
-        await Store.setup_stores()
-
 
 async def create_account(username: str, email: str, password: str):
     """Creates a new admin account"""
     await initialize()
 
-    user = await auth_service.users_store.get(UserDTO, username)
+    user = await auth_service.users_store.get(username)
     if user is not None:
         raise ValueError("user already exists")
 

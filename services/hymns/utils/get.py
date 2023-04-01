@@ -24,7 +24,7 @@ async def get_song_by_title(store: "LanguageStore", title: str) -> Song:
     Raises:
         services.hymns.errors.NotFoundError: song of given title not found for given language
     """
-    song = await store.titles_store.get(Song, title)
+    song = await store.titles_store.get(title)
 
     if song is None:
         raise NotFoundError(
@@ -47,7 +47,7 @@ async def get_song_by_number(store: "LanguageStore", number: int) -> Song:
     Raises:
         services.hymns.errors.NotFoundError: song of given number not found for given language
     """
-    song = await store.numbers_store.get(Song, f"{number}")
+    song = await store.numbers_store.get(f"{number}")
 
     if song is None:
         raise NotFoundError(

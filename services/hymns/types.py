@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 from os import PathLike
+from typing import TYPE_CHECKING, Optional
 
 import funml as ml
 
-from services.config import ServiceConfig
+import services
 from services.store.base import Store
+
+if TYPE_CHECKING:
+    from services.config import ServiceConfig
 
 
 @ml.record
@@ -31,14 +35,14 @@ class HymnsService:
 
     stores: dict[str, LanguageStore] = {}
     store_uri: bytes | PathLike[bytes] | str
-    conf: ServiceConfig
+    conf: "ServiceConfig"
 
     def __init__(
         self,
         root_path: bytes | PathLike[bytes] | str,
         stores: dict[str, LanguageStore] = {},
-        conf: ServiceConfig = ServiceConfig(),
+        conf: Optional["ServiceConfig"] = None,
     ):
         self.stores: dict[str, LanguageStore] = stores
         self.store_uri: bytes | PathLike[bytes] | str = root_path
-        self.conf = conf
+        self.conf = services.config.ServiceConfig() if conf is None else conf

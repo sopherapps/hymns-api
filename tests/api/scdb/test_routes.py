@@ -134,7 +134,7 @@ async def test_delete_song(test_client: TestClient):
 
         for lang in languages:
             for song in songs:
-                expected = Song(**{**song.dict(), "language": lang}).dict()
+                expected = [Song(**{**song.dict(), "language": lang}).dict()]
                 response = test_client.delete(f"/{lang}/{song.number}", headers=headers)
                 assert response.status_code == 200
                 assert response.json() == expected

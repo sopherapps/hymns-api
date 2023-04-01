@@ -1,9 +1,7 @@
 """Utility functions and types for handling save to database operations"""
 from typing import TYPE_CHECKING
 
-import funml as ml
-
-from services.config import add_new_language_in_place
+import services
 from services.hymns.models import Song
 from .init import initialize_one_language_store
 
@@ -37,7 +35,7 @@ async def _save_new_language(service: "HymnsService", lang: str):
         service: the HymnsService to which new language is to be added
         lang: the new language being added
     """
-    await add_new_language_in_place(
+    await services.config.add_new_language_in_place(
         service_conf=service.conf, uri=service.store_uri, lang=lang
     )
     store = initialize_one_language_store(

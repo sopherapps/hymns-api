@@ -1,9 +1,13 @@
 """Utilities for tests"""
 import os
 import shutil
+import urllib
+from urllib.parse import urlparse
 
 import pytest
 import pytest_asyncio
+import asyncpg
+from sqlalchemy import make_url
 
 from services.config import ServiceConfig
 from services.hymns.models import LineSection, Song
@@ -99,3 +103,86 @@ def setup_mail_config():
     os.environ["MAIL_SERVER"] = "some-server"
     os.environ["MAIL_DEBUG"] = "1"
     os.environ["MAIL_SUPPRESS_SEND"] = "1"
+
+
+async def create_pg_db_if_not_exists(db_uri: str):
+    """Creates a postgres database if not exists
+
+    Args:
+        db_uri: the postgres database url to connect to
+    """
+    try:
+        conn = await asyncpg.connect(dsn=db_uri)
+        await conn.close()
+    except asyncpg.InvalidCatalogNameError:
+        # Database does not exist, create it.
+        uri = make_url(db_uri)
+        sys_conn = await asyncpg.connect(
+            database="template1",
+            user="postgres",
+            host=uri.host,
+        )
+
+        try:
+            await sys_conn.execute(
+                f"CREATE DATABASE {uri.database} OWNER {uri.username}"
+            )
+        finally:
+            await sys_conn.close()
+
+
+async def drop_pg_db_if_exists(db_uri: str):
+    """Creates a postgres database if not exists
+
+    Args:
+        db_uri: the postgres database url to connect to
+    """
+    uri = make_url(db_uri)
+    sys_conn = await asyncpg.connect(
+        database="template1",
+        user="postgres",
+        host=uri.host,
+    )
+    try:
+        await sys_conn.execute(f"DROP DATABASE IF EXISTS {uri.database}")
+    finally:
+        await sys_conn.close()
+
+
+async def delete_pg_table(db_uri: str, table: str):
+    """Drops a given table if exists
+
+    Args:
+        db_uri: the postgres database url to connect to
+        table: the table to delete
+    """
+    conn = await asyncpg.connect(db_uri)
+    try:
+        await conn.execute(f"DROP TABLE IF EXISTS {table}")
+    finally:
+        await conn.close()
+
+
+async def pg_table_exists(db_uri: str, table: str) -> bool:
+    """Checks to see a given postgres table exists
+
+    Args:
+        db_uri: the postgres database url to connect to
+        table: the table to check for
+    """
+    conn = await asyncpg.connect(db_uri)
+    try:
+        exists = await conn.fetchval(
+            f"""SELECT EXISTS (
+                    SELECT FROM 
+                        pg_tables
+                    WHERE 
+                        schemaname = 'public' AND 
+                        tablename  = '{table}'
+                    )
+            """
+        )
+    finally:
+        await conn.close()
+
+    return exists

@@ -5,7 +5,7 @@ from os import PathLike
 
 from typing import TYPE_CHECKING, Dict
 
-from services.config import get_numbers_store, get_titles_store
+import services
 from services.hymns.types import LanguageStore
 
 if TYPE_CHECKING:
@@ -43,8 +43,12 @@ def initialize_one_language_store(
     Returns:
         the LanguageStore that corresponds to the given language
     """
-    numbers_store = get_numbers_store(service_conf=conf, uri=uri, lang=lang)
-    titles_store = get_titles_store(service_conf=conf, uri=uri, lang=lang)
+    numbers_store = services.config.get_numbers_store(
+        service_conf=conf, uri=uri, lang=lang
+    )
+    titles_store = services.config.get_titles_store(
+        service_conf=conf, uri=uri, lang=lang
+    )
     return LanguageStore(
         numbers_store=numbers_store, titles_store=titles_store, language=lang
     )

@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import services
 from services.store import Store
 from services.utils import Config
 
@@ -38,7 +39,7 @@ async def get_service_config(
         ValueError: no persistent service configuration as of yet
     """
     config_store = _get_config_store(uri)
-    conf = await config_store.get(ServiceConfig, _config_key)
+    conf = await config_store.get(_config_key)
 
     if conf is None:
         raise ValueError("no persistent service configuration as of yet")
@@ -61,29 +62,51 @@ def get_titles_store(
     service_conf: ServiceConfig, uri: str | bytes | PathLike[bytes], lang: str
 ):
     """Gets the Store for hymns of the given language where the keys are titles"""
-    return Store.retrieve_store(uri=uri, name=f"{lang}_title", options=service_conf)
+    return Store.retrieve_store(
+        uri=uri,
+        name=f"{lang}_title",
+        model=services.hymns.models.Song,
+        options=service_conf,
+    )
 
 
 def get_numbers_store(
     service_conf: ServiceConfig, uri: str | bytes | PathLike[bytes], lang: str
 ):
     """Gets the Store for hymns of the given language where the keys are numbers"""
-    return Store.retrieve_store(uri=uri, name=f"{lang}_number", options=service_conf)
+    return Store.retrieve_store(
+        uri=uri,
+        name=f"{lang}_number",
+        model=services.hymns.models.Song,
+        options=service_conf,
+    )
 
 
 def get_auth_store(service_conf: ServiceConfig, uri: str | bytes | PathLike[bytes]):
     """Gets the Store for the auth keys"""
-    return Store.retrieve_store(uri=uri, name="hymns_auth", options=service_conf)
+    return Store.retrieve_store(
+        uri=uri,
+        name="hymns_auth",
+        model=services.auth.models.Application,
+        options=service_conf,
+    )
 
 
 def get_users_store(service_conf: ServiceConfig, uri: str | bytes | PathLike[bytes]):
     """Gets the Store for the users"""
-    return Store.retrieve_store(uri=uri, name="hymns_users", options=service_conf)
+    return Store.retrieve_store(
+        uri=uri,
+        name="hymns_users",
+        model=services.auth.models.UserInDb,
+        options=service_conf,
+    )
 
 
 def _get_config_store(uri: str | bytes | PathLike[bytes]) -> Store:
     """Gets the persistent store for the configuration of the service"""
-    return Store.retrieve_store(uri=uri, name=_config_key, options=Config())
+    return Store.retrieve_store(
+        uri=uri, name=_config_key, model=ServiceConfig, options=Config()
+    )
 
 
 class ServiceConfig(Config):
