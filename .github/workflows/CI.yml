@@ -15,6 +15,22 @@ jobs:
       matrix:
         python-version: [ "3.11" ]
 
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_PASSWORD: password4uNme
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -32,6 +48,8 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           pytest
+        env:
+          TEST_PG_DATABASE_URI: "postgres://postgres:password4uNme@localhost:5432/test_db"
 
   release:
     name: Release

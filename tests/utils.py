@@ -117,10 +117,12 @@ async def create_pg_db_if_not_exists(db_uri: str):
     except asyncpg.InvalidCatalogNameError:
         # Database does not exist, create it.
         uri = make_url(db_uri)
+        sys_password = uri.password if uri.username == "postgres" else None
         sys_conn = await asyncpg.connect(
             database="template1",
             user="postgres",
             host=uri.host,
+            password=sys_password,
         )
 
         try:
@@ -138,10 +140,12 @@ async def drop_pg_db_if_exists(db_uri: str):
         db_uri: the postgres database url to connect to
     """
     uri = make_url(db_uri)
+    sys_password = uri.password if uri.username == "postgres" else None
     sys_conn = await asyncpg.connect(
         database="template1",
         user="postgres",
         host=uri.host,
+        password=sys_password,
     )
     try:
         await sys_conn.execute(f"DROP DATABASE IF EXISTS {uri.database}")

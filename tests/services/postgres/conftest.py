@@ -1,3 +1,5 @@
+import os
+
 from pytest_lazyfixture import lazy_fixture
 from services import hymns
 from services.config import save_service_config
@@ -27,7 +29,9 @@ songs_langs_fixture = [
 @aio_pytest_fixture
 async def test_db_path():
     """the db path to the test db"""
-    db_path = "postgresql://postgres@127.0.0.1:5432/test_db"
+    db_path = os.getenv(
+        "TEST_PG_DATABASE_URI", "postgresql://postgres@127.0.0.1:5432/test_db"
+    )
     await create_pg_db_if_not_exists(db_path)
 
     yield db_path
