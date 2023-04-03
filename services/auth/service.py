@@ -6,7 +6,6 @@ import fastapi_mail
 import funml as ml
 import pyotp
 from cryptography.fernet import Fernet
-from pydantic import BaseModel
 
 from services.auth.types import AuthService
 from services.config import get_auth_store, get_users_store, get_service_config

@@ -6,7 +6,13 @@ import pytest
 from fastapi.testclient import TestClient
 from api.models import Song
 from services import auth
-from .conftest import api_songs_langs_fixture, get_rate_limit_string, languages, songs
+from .conftest import (
+    api_songs_langs_fixture,
+    get_rate_limit_string,
+    languages,
+    songs,
+    test_user,
+)
 from ...utils import otp_email_regex
 
 
@@ -14,9 +20,8 @@ from ...utils import otp_email_regex
 @pytest.mark.parametrize("client, song, langs", api_songs_langs_fixture)
 async def test_create_song(client: TestClient, song: Song, langs: List[str]):
     """create_song creates a song"""
-
     with client:
-        headers = await _get_auth_headers(client)
+        headers = _get_auth_headers(client, test_user)
 
         for lang in langs:
             new_song = Song(**{**song.dict(), "language": lang})
@@ -39,7 +44,7 @@ async def test_create_song(client: TestClient, song: Song, langs: List[str]):
 async def test_get_song_detail(test_client: TestClient):
     """get_song_detail gets a song's details"""
     with test_client:
-        headers = await _get_auth_headers(test_client)
+        headers = _get_auth_headers(test_client, test_user)
 
         for lang in languages:
             for song in songs:
@@ -86,7 +91,7 @@ async def test_update_song(client: TestClient, song: Song, langs: List[str]):
     ]
 
     with client:
-        headers = await _get_auth_headers(client)
+        headers = _get_auth_headers(client, test_user)
 
         for new_data in test_data:
             for lang in langs:
@@ -116,7 +121,7 @@ async def test_update_song(client: TestClient, song: Song, langs: List[str]):
 async def test_delete_song(test_client: TestClient):
     """Deletes the song of the given song number"""
     with test_client:
-        headers = await _get_auth_headers(test_client)
+        headers = _get_auth_headers(test_client, test_user)
 
         for lang in languages:
             for song in songs:
@@ -172,7 +177,7 @@ async def test_query_by_title(test_client: TestClient):
     ]
 
     with test_client:
-        headers = await _get_auth_headers(test_client)
+        headers = _get_auth_headers(test_client, test_user)
 
         for lang in languages:
             for num, title in nums_and_titles:
@@ -229,7 +234,7 @@ async def test_query_by_number(test_client: TestClient):
     ]
 
     with test_client:
-        headers = await _get_auth_headers(test_client)
+        headers = _get_auth_headers(test_client, test_user)
 
         for lang in languages:
             for num, title in nums_and_titles:
@@ -249,7 +254,10 @@ async def test_query_by_number(test_client: TestClient):
                     headers=headers,
                 )
                 assert response.status_code == 200
-                assert response.json() == dict(data=expected, skip=skip, limit=limit)
+                got = response.json()
+                got["data"].sort(key=_song_key_func)
+                expected.sort(key=_song_key_func)
+                assert got == dict(data=expected, skip=skip, limit=limit)
 
 
 @pytest.mark.asyncio
@@ -262,7 +270,7 @@ async def test_api_key(test_client: TestClient):
     ]
     with test_client:
         api_key = _get_api_key(test_client)
-        jwt_token = await _get_oauth2_token(test_client)
+        jwt_token = _get_oauth2_token(test_client, test_user)
         default_headers = {"Authorization": f"Bearer {jwt_token}"}
 
         headers = {**default_headers, "x-api-key": api_key}
@@ -306,7 +314,7 @@ async def test_oauth2_token(test_client: TestClient):
         ("DELETE", "/english/1", songs[0].dict(), {}),
     ]
     with test_client:
-        jwt_token = await _get_oauth2_token(test_client)
+        jwt_token = _get_oauth2_token(test_client, test_user)
         headers = {"Authorization": f"Bearer {jwt_token}"}
         no_jwt_token_headers = {"Content-Type": "application/json"}
         wrong_jwt_token_headers = {"Authorization": f"Bearer {jwt_token[:-3]}you"}
@@ -358,7 +366,7 @@ async def test_rate_limit(test_client_and_rate_limit):
 
     with client:
         time.sleep(1)
-        headers = await _get_auth_headers(client)
+        headers = _get_auth_headers(client, test_user)
 
         for song in songs:
             payload = song.dict()
@@ -404,11 +412,11 @@ def _assert_song_has_content(
     assert response.json() == dict(number=number, translations={language: content})
 
 
-async def _get_auth_headers(client):
+def _get_auth_headers(client, user: auth.models.UserDTO):
     """Gets the auth headers to use for the client"""
     return {
         "x-api-key": _get_api_key(client),
-        "Authorization": f"Bearer {await _get_oauth2_token(client)}",
+        "Authorization": f"Bearer {_get_oauth2_token(client, user)}",
     }
 
 
@@ -421,17 +429,8 @@ def _get_api_key(client: TestClient) -> str:
     return data["key"]
 
 
-async def _get_oauth2_token(client: TestClient) -> str:
+def _get_oauth2_token(client: TestClient, user: auth.models.UserDTO) -> str:
     """Gets the Oauth2 token to use to access the admin part of the API."""
-    # create new admin user
-    user = auth.models.UserDTO(
-        username="johndoe",
-        email="johndoe@example.com",
-        password="johnpassword",
-    )
-    resp = await auth.create_user(client.app.state.auth_service, user)
-    assert isinstance(resp, ml.Result.OK)
-
     with client.app.state.auth_service.mail.record_messages() as outbox:
         # login with user
         login_request = {"username": user.username, "password": user.password}
@@ -456,3 +455,8 @@ async def _get_oauth2_token(client: TestClient) -> str:
 
     # return JWT token
     return response.json()["access_token"]
+
+
+def _song_key_func(v: Dict[str, Any]) -> str:
+    """the sort key function for sorting song lists uniformly"""
+    return f"{v['number']}{v['language']}{v['title']}"

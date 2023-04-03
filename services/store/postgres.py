@@ -43,6 +43,7 @@ class PgStore(Store[T]):
     __store_type__: str = "postgresql"
     __store_config_cls__: Type[Config] = PgConfig
     __engines__: Dict[str, PgConnection] = {}
+    __initialized_tables__: Dict[str, bool] = {}
 
     def __init__(self, uri: str, name: str, model: Type[T], options: PgConfig):
         super().__init__(uri, name, model, options)
@@ -55,13 +56,28 @@ class PgStore(Store[T]):
         table_name = get_table_name(name)
         PgStore._add_table_if_not_exists(table_name, uri)
 
-        self.__table = PgStore.__engines__[uri].tables[table_name]
-        self.__engine = PgStore.__engines__[uri].engine
+        self.__uri = uri
+        self.__table_name = table_name
+        self.__full_tablename = f"{uri}/{table_name}"
         self.__pk_fields = [
             col.name for col in self.__table.primary_key.columns.values()
         ]
         self.__lang, self._search_field = get_store_language_and_pk_field(name)
-        self.__is_table_created = False
+
+    @property
+    def __table(self):
+        """The table associated with this store"""
+        return PgStore.__engines__[self.__uri].tables[self.__table_name]
+
+    @property
+    def __engine(self):
+        """The engine associated with this store"""
+        return PgStore.__engines__[self.__uri].engine
+
+    @property
+    def __is_table_created(self):
+        """Whether the table has been created already"""
+        return self.__full_tablename in PgStore.__initialized_tables__
 
     async def set(self, k: str, v: T, **kwargs) -> None:
         await self._create_table_if_not_created()
@@ -165,6 +181,8 @@ class PgStore(Store[T]):
             await PgStore.__engines__[uri].engine.dispose()
             del PgStore.__engines__[uri]
 
+        PgStore.__initialized_tables__.clear()
+
     @staticmethod
     def _add_table_if_not_exists(table_name, uri):
         """Adds a new table to PgStore"""
@@ -179,10 +197,16 @@ class PgStore(Store[T]):
         table = Table(table_name, PgStore.__engines__[uri].metadata, *columns)
         PgStore.__engines__[uri].tables[table_name] = table
 
-    async def _create_table_if_not_created(self):
-        """Attempts to create the table in the database"""
-        if not self.__is_table_created:
-            async with self.__engine.begin() as conn:
-                await conn.run_sync(self.__table.metadata.create_all)
+    async def _create_table_if_not_created(self, force=False):
+        """Attempts to create the table in the database
 
-            self.__is_table_created = True
+        Args:
+            force: if the creation should be done regardless
+        """
+        if not self.__is_table_created or force:
+            async with self.__engine.begin() as conn:
+                await conn.run_sync(
+                    self.__table.metadata.create_all, tables=[self.__table]
+                )
+
+            PgStore.__initialized_tables__[self.__full_tablename] = True

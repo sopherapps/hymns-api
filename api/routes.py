@@ -1,5 +1,6 @@
 """The RESTful API and the admin site
 """
+import gc
 from typing import Optional, List, Any
 
 from fastapi import FastAPI, Query, Security, HTTPException, status, Depends
@@ -136,13 +137,7 @@ async def shutdown():
     """Shuts down the application"""
     # Shut down all stores
     await Store.destroy_stores()
-
-
-# @app.middleware("http")
-# async def extract_result(request: Request, call_next):
-#     response = await call_next(request)
-#     response.body = try_to(lambda v: v)(response.body)
-#     return response
+    gc.collect()
 
 
 @app.post("/register", response_model=Application)

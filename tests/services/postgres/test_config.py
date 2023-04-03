@@ -60,7 +60,7 @@ async def test_get_titles_store(db_path, conf):
         assert isinstance(store, PgStore)
         assert store._search_field == "title"
 
-        await store._create_table_if_not_created()
+        await store._create_table_if_not_created(force=True)
         assert await pg_table_exists(db_path, songs_table)
 
 
@@ -79,5 +79,5 @@ async def test_get_numbers_store(db_path, conf):
         assert isinstance(store, PgStore)
         assert store._search_field == "number"
 
-        await store._create_table_if_not_created()
+        await store._create_table_if_not_created(force=True)
         assert await pg_table_exists(db_path, songs_table)

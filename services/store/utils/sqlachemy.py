@@ -7,10 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import String, Integer, JSON, Enum, Column
 
 from services.hymns.models import LineSection
-from services.store.utils.collections import (
-    song_collection_name_regex,
-    collection_search_field_map,
-)
+from services.store.utils.collections import song_collection_name_regex
 from services.types import MusicalNote
 
 T = TypeVar("T", bound=BaseModel)

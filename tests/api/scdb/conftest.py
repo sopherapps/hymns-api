@@ -6,10 +6,14 @@ from starlette.testclient import TestClient
 from api.routes import app
 
 import pytest
-from tests.utils import setup_mail_config, delete_folder, languages, songs
-
-_rate_limits_per_second = [2, 10, 5]
-
+from tests.utils import (
+    setup_mail_config,
+    delete_folder,
+    languages,
+    songs,
+    rate_limits_per_second,
+    get_rate_limit_string,
+)
 
 api_songs_langs_fixture = [
     (lazy_fixture("test_client"), song, languages) for song in songs
@@ -30,7 +34,7 @@ def test_client(root_folder_path):
     delete_folder(db_path)
 
 
-@pytest.fixture(params=_rate_limits_per_second)
+@pytest.fixture(params=rate_limits_per_second)
 def test_client_and_rate_limit(root_folder_path, request):
     """Returns a rate limited test client for testing the API"""
     rate_limit = request.param
@@ -45,8 +49,3 @@ def test_client_and_rate_limit(root_folder_path, request):
     yield TestClient(app), rate_limit
     app.state.limiter.reset()
     delete_folder(db_path)
-
-
-def get_rate_limit_string(num_per_second: int) -> str:
-    """Converts a number of requests per second to the string notation for the slowapi library"""
-    return f"{num_per_second} per 1 second"
