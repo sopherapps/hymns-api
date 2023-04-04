@@ -6,7 +6,6 @@ import typer
 
 import cli
 
-
 app = typer.Typer(pretty_exceptions_show_locals=False)
 
 
@@ -17,8 +16,13 @@ def create_account(
     password: str = typer.Option(...),
 ):
     """Creates a new admin account"""
-    asyncio.run(cli.create_account(username=username, email=email, password=password))
-    typer.echo("user created successfully")
+    try:
+        asyncio.run(
+            cli.create_account(username=username, email=email, password=password)
+        )
+        typer.echo("user created successfully")
+    finally:
+        asyncio.run(cli.shutdown())
 
 
 @app.command()
@@ -26,8 +30,11 @@ def delete_account(
     username: str = typer.Option(...), password: str = typer.Option(...)
 ):
     """Deletes the account whose username and password are given"""
-    asyncio.run(cli.delete_account(username=username, password=password))
-    typer.echo("user deleted successfully")
+    try:
+        asyncio.run(cli.delete_account(username=username, password=password))
+        typer.echo("user deleted successfully")
+    finally:
+        asyncio.run(cli.shutdown())
 
 
 @app.command()
@@ -37,12 +44,15 @@ def change_password(
     new_password: str = typer.Option(...),
 ):
     """Changes the password of the account"""
-    asyncio.run(
-        cli.change_password(
-            username=username, old_password=old_password, new_password=new_password
+    try:
+        asyncio.run(
+            cli.change_password(
+                username=username, old_password=old_password, new_password=new_password
+            )
         )
-    )
-    typer.echo("password changed successfully")
+        typer.echo("password changed successfully")
+    finally:
+        asyncio.run(cli.shutdown())
 
 
 def shutdown():

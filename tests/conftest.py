@@ -1,7 +1,5 @@
-import contextlib
 import os
 
-import filelock
 import pytest
 
 from services.store import PgStore

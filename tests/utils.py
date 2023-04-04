@@ -238,6 +238,9 @@ async def pg_table_exists(db_uri: str, table: str) -> bool:
     Args:
         db_uri: the postgres database url to connect to
         table: the table to check for
+
+    Returns:
+        whether the postgres table exists
     """
     conn = await asyncpg.connect(db_uri)
     try:

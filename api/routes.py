@@ -108,7 +108,6 @@ async def start():
     # hymns service
     global hymns_service
     hymns_service = await hymns.initialize(hymns_db_uri)
-    tests.services.scdb.conftest.hymns_service = hymns_service
 
     # auth service
     global auth_service

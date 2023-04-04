@@ -1,4 +1,5 @@
 """CLI utilities connected to auth"""
+import gc
 from typing import Optional
 
 import funml as ml
@@ -98,6 +99,16 @@ async def login(username: str, password: str):
 async def shutdown():
     """Gracefully shuts down after the app is finished"""
     await Store.destroy_stores()
+    global auth_service
+    auth_service = None
+
+    global hymns_service_conf
+    hymns_service_conf = None
+
+    global otp_verification_url
+    otp_verification_url = None
+
+    gc.collect()
 
 
 def _handle_result(res: ml.Result):
