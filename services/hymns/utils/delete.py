@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 async def delete_from_all_stores(
     service: "HymnsService", title: str | None, number: int | None
-) -> ml.IList[Song]:
+) -> list[Song]:
     """Removes the song of given title or number from all language stores.
 
     Raises:
@@ -32,8 +32,7 @@ async def delete_from_all_stores(
     songs = []
     for store in service.stores.values():
         try:
-            song = await delete_from_one_store(store, title=title, number=number)
-            songs.append(song)
+            songs += await delete_from_one_store(store, title=title, number=number)
         except NotFoundError:
             pass
 
@@ -41,12 +40,12 @@ async def delete_from_all_stores(
         msg = f"song title '{title}'" if title is not None else f"song number {number}"
         raise NotFoundError(msg)
 
-    return ml.l(*songs)
+    return songs
 
 
 async def delete_from_one_store(
     store: "LanguageStore", title: str | None, number: int | None
-) -> "Song":
+) -> list["Song"]:
     """Removes the song of given title or number from the language store.
 
     Args:
@@ -55,29 +54,53 @@ async def delete_from_one_store(
         number: the song number of the song to delete
 
     Returns:
-        the deleted song
+        the deleted songs
 
     Raises:
         NotFoundError: no song of title or number was found
+        ValidationError: no title or number supplied for deletion
     """
-    song = await get_song_by_title_or_number(store, title=title, number=number)
-    if song is None:
-        msg = f"song title: {title}" if title is not None else f"song number: {number}"
-        raise NotFoundError(f"{msg} for language: '{store.language}'")
+    err_msg = ""
+    deleted_songs = {}
+    is_title_defined = title is not None
+    is_number_defined = number is not None
 
-    await _delete_from_titles_store(store, title=song.title)
-    await _delete_from_numbers_store(store, number=song.number)
+    if not is_title_defined and not is_number_defined:
+        raise ValidationError("no title or number supplied for deletion")
 
-    return song
+    if is_title_defined:
+        songs = await store.titles_store.delete(title)
+        songs_map = {
+            f"{song.number}-{song.title}-{song.language}": song for song in songs
+        }
+        deleted_songs = {**songs_map}
+        err_msg += f"title {title}, "
+
+    if is_number_defined:
+        songs = await store.numbers_store.delete(f"{number}")
+        songs_map = {
+            f"{song.number}-{song.title}-{song.language}": song for song in songs
+        }
+        deleted_songs = {**songs_map}
+        err_msg += f"number {number}, "
+
+    if len(deleted_songs) > 0:
+        return [*deleted_songs.values()]
+
+    raise NotFoundError(f"{err_msg}for language: '{store.language}'")
 
 
-async def _delete_from_titles_store(store: "LanguageStore", title: str | None):
+async def _delete_from_titles_store(
+    store: "LanguageStore", title: str | None
+) -> list[Song] | None:
     """Removes song from titles store of language store"""
     if title is not None:
-        await store.titles_store.delete(title)
+        return await store.titles_store.delete(title)
 
 
-async def _delete_from_numbers_store(store: "LanguageStore", number: int | None):
+async def _delete_from_numbers_store(
+    store: "LanguageStore", number: int | None
+) -> list[Song] | None:
     """Removes song from numbers store of language store"""
     if number is not None:
-        await store.numbers_store.delete(f"{number}")
+        return await store.numbers_store.delete(f"{number}")

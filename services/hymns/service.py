@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import funml as ml
 
-from services.config import get_service_config
+import services
 from services.hymns.utils.delete import delete_from_one_store, delete_from_all_stores
 from services.hymns.utils.get import (
     get_song_by_number as get_raw_song_by_number,
     get_song_by_title as get_raw_song_by_title,
 )
-from services.hymns.utils.init import initialize_language_stores
+from services.hymns.utils.init import initialize_many_language_stores
 from services.hymns.utils.save import save_song
 from services.hymns.utils.search import (
     query_store_by_title,
@@ -27,10 +27,10 @@ async def initialize(root_path: bytes | str) -> "HymnsService":
         root_path: the path to the stores for the hymns service
 
     Returns:
-        the HymnsService whose configuration is at the root_path
+        the HymnsService whose configuration is at the store_uri
     """
-    conf = await get_service_config(root_path)
-    stores = await initialize_language_stores(root_path, conf=conf)
+    conf = await services.config.get_service_config(root_path)
+    stores = initialize_many_language_stores(root_path, conf=conf)
     return HymnsService(root_path=root_path, stores=stores)
 
 
@@ -72,7 +72,7 @@ async def delete_song(
         language: the language from which to delete the song. If None, the song is deleted from all languages. Default: None
 
     Returns:
-        an ml.Result.OK(ml.IList[Song]) or ml.Result.OK(Song) with songs that have been deleted or an ml.Result.ERR(Exception) with the exception \
+        an ml.Result.OK(List[Song]) with songs that have been deleted or an ml.Result.ERR(Exception) with the exception \
         that occurred
     """
     try:
@@ -81,8 +81,8 @@ async def delete_song(
             return ml.Result.OK(songs)
         else:
             store = get_language_store(service, lang=language)
-            song = await delete_from_one_store(store, title=title, number=number)
-            return ml.Result.OK(song)
+            songs = await delete_from_one_store(store, title=title, number=number)
+            return ml.Result.OK(songs)
     except Exception as exp:
         return ml.Result.ERR(exp)
 

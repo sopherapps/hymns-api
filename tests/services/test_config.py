@@ -1,75 +1,72 @@
-import os.path
-import shutil
-
 import pytest
-from py_scdb import AsyncStore
+
+import tests.utils.shared
 
 from services.config import (
     save_service_config,
     get_service_config,
-    add_new_language,
+    add_new_language_in_place,
     get_titles_store,
     get_numbers_store,
 )
-from tests.conftest import (
-    delete_folder,
-    service_configs_fixture,
-    service_configs_langs_fixture,
+
+from .conftest import (
+    configs_fixture,
+    titles_stores_fixture,
+    numbers_stores_fixture,
+    langs_fixture,
 )
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("root_path, expected", service_configs_fixture)
-async def test_save_and_get_service_config(root_path, expected):
+@pytest.mark.parametrize("db_path, expected", configs_fixture)
+async def test_save_and_get_service_config(db_path, expected):
     """save_service_config saves the config of the service in a database, get_service_config retrieves it"""
-    await save_service_config(root_path, expected)
-    got = await get_service_config(root_path)
+    await save_service_config(db_path, expected)
+    got = await get_service_config(db_path)
     assert got == expected
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("root_path, conf, languages", service_configs_langs_fixture)
-async def test_add_new_language(root_path, conf, languages):
+@pytest.mark.parametrize("db_path, conf, languages", langs_fixture)
+async def test_add_new_language(db_path, conf, languages):
     """add_new_language adds a new language to the config"""
     accumulated_languages = [*conf.languages]
-    await save_service_config(root_path, conf)
+    await save_service_config(db_path, conf)
 
     for lang in languages:
-        await add_new_language(root_path, lang)
-        saved_conf = await get_service_config(root_path)
+        await add_new_language_in_place(service_conf=conf, uri=db_path, lang=lang)
+        saved_conf = await get_service_config(db_path)
         accumulated_languages.append(lang)
-        assert saved_conf.languages == accumulated_languages
+        try:
+            assert saved_conf.languages == accumulated_languages
+        except AssertionError as exp:
+            raise AssertionError(
+                f"{exp}, saved_conf: {saved_conf}, langs: {accumulated_languages}"
+            )
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("root_path, conf, languages", service_configs_langs_fixture)
-async def test_get_titles_store(root_path, conf, languages):
-    """get_titles_store gets the store for storing titles for a given language"""
-    conf.languages = languages
-    await save_service_config(root_path, conf)
+@pytest.mark.parametrize(
+    "db_path, conf, is_titles_store_for_lang", titles_stores_fixture
+)
+async def test_get_titles_store(db_path, conf, is_titles_store_for_lang):
+    """get_titles_store creates the songs table, with search field as title"""
+    await save_service_config(db_path, conf)
 
-    for lang in conf.languages:
-        titles_store_path = os.path.join(root_path, f"{lang}-title")
-        delete_folder(titles_store_path)
-
-        assert not os.path.exists(titles_store_path)
-        store = await get_titles_store(root_path, lang)
-        assert isinstance(store, AsyncStore)
-        assert os.path.exists(titles_store_path)
+    for lang in tests.utils.shared.languages:
+        store = get_titles_store(service_conf=conf, uri=db_path, lang=lang)
+        await is_titles_store_for_lang(store, lang)
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("root_path, conf, languages", service_configs_langs_fixture)
-async def test_get_numbers_store(root_path, conf, languages):
-    """get_numbers_store gets the store for storing hymn numbers for a given language"""
-    conf.languages = languages
-    await save_service_config(root_path, conf)
+@pytest.mark.parametrize(
+    "db_path, conf, is_numbers_store_for_lang", numbers_stores_fixture
+)
+async def test_get_numbers_store(db_path, conf, is_numbers_store_for_lang):
+    """get_numbers_store creates the songs table, with search field as number"""
+    await save_service_config(db_path, conf)
 
-    for lang in conf.languages:
-        numbers_store_path = os.path.join(root_path, f"{lang}-number")
-        delete_folder(numbers_store_path)
-
-        assert not os.path.exists(numbers_store_path)
-        store = await get_numbers_store(root_path, lang)
-        assert isinstance(store, AsyncStore)
-        assert os.path.exists(numbers_store_path)
+    for lang in tests.utils.shared.languages:
+        store = get_numbers_store(service_conf=conf, uri=db_path, lang=lang)
+        await is_numbers_store_for_lang(store, lang)

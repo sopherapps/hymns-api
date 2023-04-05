@@ -1,6 +1,7 @@
 """The RESTful API and the admin site
 """
-from typing import Optional, List
+import gc
+from typing import Optional, List, Any
 
 from fastapi import FastAPI, Query, Security, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -12,14 +13,8 @@ import settings
 from api.models import (
     Song,
     SongDetail,
-    PaginatedResponse,
     PartialSong,
-    Application,
-    LoginResponse,
-    OTPResponse,
     OTPRequest,
-    User,
-    ChangePasswordRequest,
 )
 from api.utils import try_to
 from services import hymns, config, auth
@@ -30,6 +25,15 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+from services.auth.models import (
+    UserDTO,
+    LoginResponse,
+    OTPResponse,
+    ChangePasswordRequest,
+    Application,
+)
+from services.hymns.models import PaginatedResponse
+from services.store import Store
 
 api_key_header = APIKeyHeader(name="x-api-key")
 
@@ -60,7 +64,7 @@ async def _get_api_key(header_key: str = Security(api_key_header)):
     )
 
 
-async def _get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+async def _get_current_user(token: str = Depends(oauth2_scheme)) -> UserDTO:
     """Gets the current logged in user
 
     Args:
@@ -73,14 +77,16 @@ async def _get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         raises HTTPException in case of any error
     """
     resp = await auth.get_current_user(auth_service, token=token)
-    convert_to_user = try_to(User.from_auth)
+    convert_to_user = try_to(lambda v: v)
     return convert_to_user(resp)
 
 
 @app.on_event("startup")
 async def start():
     """Initializes the hymns service"""
-    db_path = settings.get_db_path()
+    hymns_db_uri = settings.get_hymns_db_uri()
+    auth_db_uri = settings.get_auth_db_uri()
+    config_db_uri = settings.get_config_db_uri()
     hymns_service_conf = settings.get_hymns_service_config()
     api_key_length = settings.get_api_key_length()
     api_secret = settings.get_api_secret()
@@ -90,19 +96,18 @@ async def start():
     mail_sender = settings.get_auth_email_sender()
     otp_verification_url = settings.get_otp_verification_url()
 
-    await config.save_service_config(db_path, hymns_service_conf)
+    await config.save_service_config(config_db_uri, hymns_service_conf)
 
     global app
 
     # hymns service
     global hymns_service
-    hymns_service = await hymns.initialize(db_path)
-    app.state.hymns_service = hymns_service
+    hymns_service = await hymns.initialize(hymns_db_uri)
 
     # auth service
     global auth_service
     auth_service = await auth.initialize(
-        root_path=db_path,
+        uri=auth_db_uri,
         key_size=api_key_length,
         api_secret=api_secret,
         jwt_ttl=jwt_ttl,
@@ -121,6 +126,14 @@ async def start():
     )
 
 
+@app.on_event("shutdown")
+async def shutdown():
+    """Shuts down the application"""
+    # Shut down all stores
+    await Store.destroy_stores()
+    gc.collect()
+
+
 @app.post("/register", response_model=Application)
 async def register_app():
     """Registers a new app to get a new API key.
@@ -129,7 +142,7 @@ async def register_app():
     such that an API key is seen only once
     """
     res = await auth.register_app(auth_service)
-    transform = try_to(Application.from_auth)
+    transform = try_to(lambda v: v)
     return transform(res)
 
 
@@ -144,7 +157,7 @@ async def login(data: OAuth2PasswordRequestForm = Depends()):
         otp_verification_url=otp_url,
     )
 
-    transform = try_to(LoginResponse.from_auth)
+    transform = try_to(lambda v: v)
     return transform(res)
 
 
@@ -152,7 +165,7 @@ async def login(data: OAuth2PasswordRequestForm = Depends()):
 async def verify_otp(data: OTPRequest, token: str = Depends(oauth2_scheme)):
     """Verifies the one-time password got by email"""
     res = await auth.verify_otp(auth_service, otp=data.otp, unverified_token=token)
-    transform = try_to(OTPResponse.from_auth)
+    transform = try_to(lambda v: v)
     return transform(res)
 
 
@@ -194,7 +207,7 @@ async def query_by_title(
     res = await hymns.query_songs_by_title(
         hymns_service, q=q, language=language, skip=skip, limit=limit
     )
-    transform = try_to(PaginatedResponse.from_hymns)
+    transform = try_to(lambda v: v)
     return transform(res)
 
 
@@ -210,15 +223,15 @@ async def query_by_number(
     res = await hymns.query_songs_by_number(
         hymns_service, q=q, language=language, skip=skip, limit=limit
     )
-    transform = try_to(PaginatedResponse.from_hymns)
+    transform = try_to(lambda v: v)
     return transform(res)
 
 
 @app.post("/", response_model=Song)
-async def create_song(song: Song, user: User = Depends(_get_current_user)):
+async def create_song(song: Song, user: UserDTO = Depends(_get_current_user)):
     """Creates a new song"""
-    res = await hymns.add_song(hymns_service, song=song.to_hymns_song())
-    transform = try_to(Song.from_hymns)
+    res = await hymns.add_song(hymns_service, song=song)
+    transform = try_to(lambda v: v)
     return transform(res)
 
 
@@ -227,24 +240,24 @@ async def update_song(
     language: str,
     number: int,
     song: PartialSong,
-    user: User = Depends(_get_current_user),
+    user: UserDTO = Depends(_get_current_user),
 ):
     """Updates the song whose number is given"""
     original = await _get_song(language=language, number=number)
     new_data = {**original.dict(), **song.dict(exclude_unset=True)}
     new_song = Song(**new_data)
-    res = await hymns.add_song(hymns_service, song=new_song.to_hymns_song())
-    transform = try_to(Song.from_hymns)
+    res = await hymns.add_song(hymns_service, song=new_song)
+    transform = try_to(lambda v: v)
     return transform(res)
 
 
-@app.delete("/{language}/{number}", response_model=Song)
+@app.delete("/{language}/{number}", response_model=List[Song])
 async def delete_song(
-    language: str, number: int, user: User = Depends(_get_current_user)
+    language: str, number: int, user: UserDTO = Depends(_get_current_user)
 ):
     """Deletes the song whose number is given"""
     res = await hymns.delete_song(hymns_service, number=number, language=language)
-    transform = try_to(Song.from_hymns)
+    transform = try_to(lambda v: v)
     return transform(res)
 
 
@@ -253,5 +266,5 @@ async def _get_song(language: str, number: int) -> Song:
     res = await hymns.get_song_by_number(
         hymns_service, number=number, language=language
     )
-    convert_to_song = try_to(Song.from_hymns)
+    convert_to_song = try_to(lambda v: v)
     return convert_to_song(res)

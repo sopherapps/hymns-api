@@ -21,11 +21,12 @@ def try_to(do: Callable[[Any], T]) -> Callable[[ml.Result], T]:
     return (
         ml.match()
         .case(ml.Result.OK(Any), do)
-        .case(ml.Result.ERR(Exception), do=_raise_http_error)
+        .case(ml.Result.ERR(Exception), do=raise_http_error)
+        .case(Any, do=lambda v: v)
     )
 
 
-def _raise_http_error(exp: Exception):
+def raise_http_error(exp: Exception):
     """Raises an HTTP exception given exp.
 
     Args:

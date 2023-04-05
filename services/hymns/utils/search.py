@@ -23,8 +23,7 @@ async def query_store_by_title(
     Returns:
         a list of matching songs for the given search term in the given store
     """
-    payload = await store.titles_store.search(term=q, skip=skip, limit=limit)
-    return [ml.from_json(Song, value=item) for _, item in payload]
+    return await store.titles_store.search(term=q, skip=skip, limit=limit)
 
 
 async def query_store_by_number(
@@ -41,5 +40,4 @@ async def query_store_by_number(
     Returns:
         a list of matching songs for the given search term in the given store
     """
-    payload = await store.numbers_store.search(term=f"{q}", skip=skip, limit=limit)
-    return [ml.from_json(Song, value=item) for _, item in payload]
+    return await store.numbers_store.search(term=f"{q}", skip=skip, limit=limit)

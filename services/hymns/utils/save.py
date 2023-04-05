@@ -1,11 +1,9 @@
 """Utility functions and types for handling save to database operations"""
 from typing import TYPE_CHECKING
 
-import funml as ml
-
-from services.config import add_new_language
+import services
 from services.hymns.models import Song
-from .init import initialize_language_store
+from .init import initialize_one_language_store
 
 if TYPE_CHECKING:
     from ..types import LanguageStore, HymnsService
@@ -37,18 +35,20 @@ async def _save_new_language(service: "HymnsService", lang: str):
         service: the HymnsService to which new language is to be added
         lang: the new language being added
     """
-    await add_new_language(service.root_path, lang=lang)
-    store = await initialize_language_store(service.root_path, lang=lang)
+    await services.config.add_new_language_in_place(
+        service_conf=service.conf, uri=service.store_uri, lang=lang
+    )
+    store = initialize_one_language_store(
+        conf=service.conf, uri=service.store_uri, lang=lang
+    )
     service.stores[lang] = store
 
 
 def _save_to_titles_store(store: "LanguageStore", song: Song):
     """Saves song in language store by song title"""
-    value = ml.to_json(song)
-    return store.titles_store.set(song.title, v=value)
+    return store.titles_store.set(k=song.title, v=song)
 
 
 def _save_to_numbers_store(store: "LanguageStore", song: Song):
     """Saves song in language store by song number"""
-    value = ml.to_json(song)
-    return store.numbers_store.set(f"{song.number}", v=value)
+    return store.numbers_store.set(k=f"{song.number}", v=song)

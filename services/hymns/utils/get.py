@@ -24,14 +24,13 @@ async def get_song_by_title(store: "LanguageStore", title: str) -> Song:
     Raises:
         services.hymns.errors.NotFoundError: song of given title not found for given language
     """
-    payload = await store.titles_store.get(title)
+    song = await store.titles_store.get(title)
 
-    if payload is None:
+    if song is None:
         raise NotFoundError(
-            f"song of title: '{title}' not found for language: '{store.language}'"
+            f"song of title: '{title}' for language: '{store.language}'"
         )
 
-    song = ml.from_json(type_=Song, value=payload)
     return song
 
 
@@ -48,14 +47,13 @@ async def get_song_by_number(store: "LanguageStore", number: int) -> Song:
     Raises:
         services.hymns.errors.NotFoundError: song of given number not found for given language
     """
-    payload = await store.numbers_store.get(f"{number}")
+    song = await store.numbers_store.get(f"{number}")
 
-    if payload is None:
+    if song is None:
         raise NotFoundError(
             f"song of number: '{number}' not found for language: '{store.language}'"
         )
 
-    song = ml.from_json(type_=Song, value=payload)
     return song
 
 

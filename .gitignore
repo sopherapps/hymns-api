@@ -169,5 +169,3 @@ db/
 .space
 
 env9/
-
-Dockerfile.dev

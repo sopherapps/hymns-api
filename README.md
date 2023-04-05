@@ -19,13 +19,6 @@ This is a general API that can host hymns/songs including their musical notation
  - Can have multiple translations for each song
  - CLI to do some devOps chores e.g. create new admin users etc.
 
-## Contributing
-
-Contributions are welcome. The docs have to maintained, the code has to be made cleaner, more idiomatic and faster,
-and there might be need for someone else to take over this repo in case I move on to other things. It happens!
-
-When you are ready, look at the [CONTRIBUTIONS GUIDELINES](./CONTRIBUTING.md)
-
 ## System Design
 
 ### Dependencies
@@ -37,22 +30,6 @@ When you are ready, look at the [CONTRIBUTIONS GUIDELINES](./CONTRIBUTING.md)
 - [slowapi](https://pypi.org/project/slowapi/) - rate-limiting
 - [pyotp](https://pyauth.github.io/pyotp/) - for one time passwords
 - [fastapi-mail](https://sabuhish.github.io/fastapi-mail/) - for sending emails
-
-### Major Design Decisions
-
-- Each translation has its own scdb database, for scalability.
-- The `user` records are in their own scdb database, for scalability.
-- Access to different databases is done concurrently, for more speed.
-- All business logic is put in appropriate services in the `services` folder
-- All API related logic is in the `api` package, entry point being `main.py` in root folder.
-- All CLI(command line interface) related logic is in the `cli` package, 
-  entry point being `manage.py` in root folder.
-- Any shared utility functions are found in the `utils` package or module in the package where
-  they are needed e.g. services can have its own `utils`, api can also have its own `utils`,
-  even the entire project can have its own `utils`.
-- The `tests` package mirrors the folder structure followed by the project, 
-  but with `test_` prefixes on the module names.
-
 
 ## Settings
 
@@ -106,14 +83,22 @@ cp .env.example .env
 ```shell
 python3 -m venv env 
 source env/bin/activate
-pip install -r requirements.txt
+pip install -r requirements/prod.txt
 ```
 
-- Run the API app. Ensure it is only one worker so that scdb may function as expected.
+- Run the API app. 
 
 ```shell
-gunicorn -w 1 -k uvicorn.workers.UvicornWorker -b :8000 main:app
+gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b :8000 main:app
 ```
+
+NOTE: If you are using scdb, ensure it is only one worker as scdb has unexpected behaviour when run on multiple workers.
+    i.e.  
+
+    ```shell
+    gunicorn -w 1 -k uvicorn.workers.UvicornWorker -b :8000 main:app
+    ```
+
 
 - Run the CLI app, and see the menu for the different commands
 
@@ -127,13 +112,22 @@ python manage.py --help
 pytest
 ```
 
-## Acknowledgements
+## Contributing
 
-- To God, who has created me, chosen me, saved me and sustains me. (Jeremiah 1: 4-5)
+Contributions are welcome. The docs have to maintained, the code has to be made cleaner, more idiomatic and faster,
+and there might be need for someone else to take over this repo in case I move on to other things. It happens!
+
+When you are ready, look at the [CONTRIBUTIONS GUIDELINES](docs/CONTRIBUTING.md)
 
 ## License
 
-Copyright (c) 2023 [Martin Ahindura](https://github.com/Tinitto) Licensed under the [MIT License](./LICENSE)
+Copyright (c) 2023 [Martin Ahindura](https://github.com/Tinitto)
+
+Licensed under the [MIT License](docs/LICENSE)
+
+## Acknowledgements
+
+- To God, who has created me, chosen me, saved me and sustains me. (Jeremiah 1: 4-5)
 
 ## Gratitude
 

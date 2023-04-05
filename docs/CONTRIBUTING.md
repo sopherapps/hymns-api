@@ -28,7 +28,7 @@ requests:
 ## Any contributions you make will be under the MIT Software Licenses
 
 In short, when you submit code changes, your submissions are understood to be under the
-same [MIT License](./LICENSE) that covers the project. Feel free to contact the maintainers if that's a concern.
+same [MIT License](LICENSE) that covers the project. Feel free to contact the maintainers if that's a concern.
 
 ## Report bugs using Github's [issues](https://github.com/sopherapps/hymns-api/issues)
 
@@ -77,7 +77,7 @@ By contributing, you agree that your contributions will be licensed under its MI
 - Install the dependencies
 
   ```bash
-  pip install -r dev-requirements.txt
+  pip install -r requirements/dev.txt
   ```
 
 - Run the pre-commit installation

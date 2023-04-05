@@ -13,9 +13,24 @@ _default_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db"
 dotenv.load_dotenv()
 
 
-def get_db_path() -> str:
+def get_db_uri() -> str:
     """Gets the db path for the app"""
     return os.getenv("DB_PATH", _default_db_path)
+
+
+def get_auth_db_uri() -> str:
+    """Gets the db uri for the auth service"""
+    return os.getenv("AUTH_DB_URI", get_db_uri())
+
+
+def get_config_db_uri() -> str:
+    """Gets the db uri for the config"""
+    return os.getenv("CONFIG_DB_PATH", get_db_uri())
+
+
+def get_hymns_db_uri() -> str:
+    """Gets the db uri for the hymns service"""
+    return os.getenv("HYMNS_DB_PATH", get_db_uri())
 
 
 def get_hymns_service_config() -> ServiceConfig:
