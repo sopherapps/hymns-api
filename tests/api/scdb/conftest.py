@@ -6,9 +6,10 @@ from starlette.testclient import TestClient
 from api.routes import app
 
 import pytest
-from tests.utils import (
+
+from tests.utils.scdb import delete_folder
+from tests.utils.shared import (
     setup_mail_config,
-    delete_folder,
     languages,
     songs,
     rate_limits_per_second,

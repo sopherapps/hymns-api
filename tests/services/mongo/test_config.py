@@ -1,6 +1,7 @@
 import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
+import tests.utils.shared
 from services.store import MongoStore
 
 from services.config import (
@@ -30,7 +31,7 @@ async def test_save_and_get_service_config(db_path, expected):
 @pytest.mark.parametrize("db_path, conf, languages", service_configs_langs_fixture)
 async def test_add_new_language(db_path, conf, languages):
     """add_new_language adds a new language to the config"""
-    accumulated_languages = [*conf.languages]
+    accumulated_languages = [*tests.utils.shared.languages]
     await save_service_config(db_path, conf)
 
     for lang in languages:
@@ -51,7 +52,7 @@ async def test_get_titles_store(db_path, conf):
     """get_titles_store creates the songs table, with search field as title"""
     await save_service_config(db_path, conf)
 
-    for lang in conf.languages:
+    for lang in tests.utils.shared.languages:
         store = get_titles_store(service_conf=conf, uri=db_path, lang=lang)
         assert isinstance(store, MongoStore)
         assert store._search_field == "title"
@@ -66,7 +67,7 @@ async def test_get_numbers_store(db_path, conf):
     """get_numbers_store creates the songs table, with search field as number"""
     await save_service_config(db_path, conf)
 
-    for lang in conf.languages:
+    for lang in tests.utils.shared.languages:
         store = get_numbers_store(service_conf=conf, uri=db_path, lang=lang)
         assert isinstance(store, MongoStore)
         assert store._search_field == "number"

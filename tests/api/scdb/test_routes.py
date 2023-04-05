@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from api.models import Song
 from services import auth
 from .conftest import api_songs_langs_fixture, get_rate_limit_string, languages, songs
-from ...utils import otp_email_regex
+from ...utils.shared import otp_email_regex
 
 
 @pytest.mark.asyncio

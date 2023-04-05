@@ -2,11 +2,10 @@ import os
 import pytest
 
 from services.store import PgStore, MongoStore
-from tests.utils import (
+from tests.utils.mongo import clear_mongo_db
+from tests.utils.postgres import drop_pg_db_if_exists, create_pg_db_if_not_exists
+from tests.utils.shared import (
     aio_pytest_fixture,
-    create_pg_db_if_not_exists,
-    drop_pg_db_if_exists,
-    clear_mongo_db,
 )
 
 _ROOT_FOLDER_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

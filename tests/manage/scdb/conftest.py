@@ -4,8 +4,9 @@ from typer.testing import CliRunner
 
 from api.routes import app
 from cli import initialize as cli_initialize
+from tests.utils.scdb import delete_folder
 
-from tests.utils import aio_pytest_fixture, setup_mail_config, delete_folder
+from tests.utils.shared import aio_pytest_fixture, setup_mail_config
 
 
 @aio_pytest_fixture

@@ -1,6 +1,8 @@
 import os.path
 
 import pytest
+
+import tests.utils.shared
 from services.store.base import Store
 
 from services.config import (
@@ -31,7 +33,7 @@ async def test_save_and_get_service_config(root_path, expected):
 @pytest.mark.parametrize("root_path, conf, languages", service_configs_langs_fixture)
 async def test_add_new_language(root_path, conf, languages):
     """add_new_language adds a new language to the config"""
-    accumulated_languages = [*conf.languages]
+    accumulated_languages = [*tests.utils.shared.languages]
     await save_service_config(root_path, conf)
 
     for lang in languages:
@@ -50,10 +52,10 @@ async def test_add_new_language(root_path, conf, languages):
 @pytest.mark.parametrize("root_path, conf, languages", service_configs_langs_fixture)
 async def test_get_titles_store(root_path, conf, languages):
     """get_titles_store gets the store for storing titles for a given language"""
-    conf.languages = languages
+    tests.utils.shared.languages = languages
     await save_service_config(root_path, conf)
 
-    for lang in conf.languages:
+    for lang in tests.utils.shared.languages:
         titles_store_path = os.path.join(root_path, f"{lang}_title")
         delete_folder(titles_store_path)
 
@@ -67,10 +69,10 @@ async def test_get_titles_store(root_path, conf, languages):
 @pytest.mark.parametrize("root_path, conf, languages", service_configs_langs_fixture)
 async def test_get_numbers_store(root_path, conf, languages):
     """get_numbers_store gets the store for storing hymn numbers for a given language"""
-    conf.languages = languages
+    tests.utils.shared.languages = languages
     await save_service_config(root_path, conf)
 
-    for lang in conf.languages:
+    for lang in tests.utils.shared.languages:
         numbers_store_path = os.path.join(root_path, f"{lang}_number")
         delete_folder(numbers_store_path)
 

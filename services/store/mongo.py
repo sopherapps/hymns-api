@@ -73,9 +73,9 @@ class MongoStore(Store[T]):
         data[self._search_field] = k
 
         for pk_field in self.__pk_fields:
-            pk_value = data.get(pk_field, None)
+            pk_value = f"{data.get(pk_field, None)}"
             query[pk_field] = pk_value
-            data[pk_field] = f"{pk_value}"
+            data[pk_field] = pk_value
 
         await self._collection.update_one(
             filter=query, update={"$set": data}, upsert=True

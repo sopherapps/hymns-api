@@ -2,7 +2,7 @@ from pytest_lazyfixture import lazy_fixture
 from services import hymns
 from services.config import save_service_config
 
-from tests.utils import (
+from tests.utils.shared import (
     aio_pytest_fixture,
     service_configs,
     songs,

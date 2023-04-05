@@ -4,8 +4,9 @@ from services import hymns
 from services.config import save_service_config
 
 import pytest
-from tests.utils import (
-    delete_folder,
+
+from tests.utils.scdb import delete_folder
+from tests.utils.shared import (
     aio_pytest_fixture,
     service_configs,
     songs,

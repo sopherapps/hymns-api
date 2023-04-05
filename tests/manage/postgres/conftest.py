@@ -5,7 +5,7 @@ from typer.testing import CliRunner
 
 from api.routes import app
 
-from tests.utils import setup_mail_config, aio_pytest_fixture
+from tests.utils.shared import setup_mail_config, aio_pytest_fixture
 
 
 @aio_pytest_fixture()

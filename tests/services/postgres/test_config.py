@@ -1,5 +1,6 @@
 import pytest
 
+import tests.utils.shared
 from services.store import PgStore
 
 from services.config import (
@@ -14,7 +15,7 @@ from .conftest import (
     service_configs_fixture,
     service_configs_langs_fixture,
 )
-from ...utils import delete_pg_table, pg_table_exists
+from ...utils.postgres import delete_pg_table, pg_table_exists
 
 
 @pytest.mark.asyncio
@@ -30,7 +31,7 @@ async def test_save_and_get_service_config(db_path, expected):
 @pytest.mark.parametrize("db_path, conf, languages", service_configs_langs_fixture)
 async def test_add_new_language(db_path, conf, languages):
     """add_new_language adds a new language to the config"""
-    accumulated_languages = [*conf.languages]
+    accumulated_languages = [*tests.utils.shared.languages]
     await save_service_config(db_path, conf)
 
     for lang in languages:
@@ -52,7 +53,7 @@ async def test_get_titles_store(db_path, conf):
     await save_service_config(db_path, conf)
     songs_table = "songs"
 
-    for lang in conf.languages:
+    for lang in tests.utils.shared.languages:
         await delete_pg_table(db_path, songs_table)
 
         assert not await pg_table_exists(db_path, songs_table)
@@ -71,7 +72,7 @@ async def test_get_numbers_store(db_path, conf):
     await save_service_config(db_path, conf)
     songs_table = "songs"
 
-    for lang in conf.languages:
+    for lang in tests.utils.shared.languages:
         await delete_pg_table(db_path, songs_table)
 
         assert not await pg_table_exists(db_path, songs_table)
