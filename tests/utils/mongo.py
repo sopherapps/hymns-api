@@ -18,9 +18,8 @@ def clear_mongo_db(uri: str):
     for db_name in db.list_database_names():
         try:
             db.drop_database(db_name)
-        except pymongo.errors.OperationFailure as exp:
-            if "dropping the 'admin' database is prohibited" not in f"{exp}".lower():
-                raise exp
+        except pymongo.errors.OperationFailure:
+            pass
 
 
 def mongo_upsert_user(db_uri: str, fernet: Fernet, user: UserDTO):
