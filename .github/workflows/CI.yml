@@ -31,6 +31,20 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+        mongodb:
+          image: mongo:latest
+          env:
+            MONGO_INITDB_ROOT_USERNAME: mongo_user
+            MONGO_INITDB_ROOT_PASSWORD: mongo_pass
+          ports:
+            - 27017:27017
+          # Set health checks to wait until mongo has started
+          options: >-
+            --health-cmd "echo 'db.stats().ok' | mongo localhost:27017/test --quiet"
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -50,6 +64,7 @@ jobs:
           pytest
         env:
           TEST_PG_DATABASE_URI: "postgres://postgres:password4uNme@localhost:5432/test_db"
+          TEST_MONGO_DATABASE_URI: "mongodb://mongo_user:mongo_pass@localhost:27017"
 
   release:
     name: Release
