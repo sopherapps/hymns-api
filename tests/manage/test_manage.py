@@ -7,15 +7,17 @@ from cli import shutdown
 from cli.auth import login
 from manage import app
 from services.auth.errors import AuthenticationError
+from .conftest import cli_runner_fixture
 
 
-def test_create_account(pg_cli_runner: CliRunner):
+@pytest.mark.parametrize("cli_runner", cli_runner_fixture)
+def test_create_account(cli_runner: CliRunner):
     """Can create a new account"""
     username = "johndoe"
     password = "password123"
 
     assert not _user_exists(username, password)
-    result = pg_cli_runner.invoke(
+    result = cli_runner.invoke(
         app,
         [
             "create-account",
@@ -32,12 +34,13 @@ def test_create_account(pg_cli_runner: CliRunner):
     assert _user_exists(username, password)
 
 
-def test_create_account_no_duplicate_account(pg_cli_runner: CliRunner):
+@pytest.mark.parametrize("cli_runner", cli_runner_fixture)
+def test_create_account_no_duplicate_account(cli_runner: CliRunner):
     """Cannot create a duplicate account"""
     username = "johndoe"
     password = "password123"
 
-    result = pg_cli_runner.invoke(
+    result = cli_runner.invoke(
         app,
         [
             "create-account",
@@ -51,7 +54,7 @@ def test_create_account_no_duplicate_account(pg_cli_runner: CliRunner):
     )
     assert result.exit_code == 0
 
-    result = pg_cli_runner.invoke(
+    result = cli_runner.invoke(
         app,
         [
             "create-account",
@@ -69,12 +72,13 @@ def test_create_account_no_duplicate_account(pg_cli_runner: CliRunner):
     assert _user_exists(username, password)
 
 
-def test_delete_account(pg_cli_runner: CliRunner):
+@pytest.mark.parametrize("cli_runner", cli_runner_fixture)
+def test_delete_account(cli_runner: CliRunner):
     """Can delete an account"""
     username = "johndoe"
     password = "password123"
 
-    pg_cli_runner.invoke(
+    cli_runner.invoke(
         app,
         [
             "create-account",
@@ -88,7 +92,7 @@ def test_delete_account(pg_cli_runner: CliRunner):
     )
     assert _user_exists(username, password)
 
-    result = pg_cli_runner.invoke(
+    result = cli_runner.invoke(
         app, ["delete-account", "--username", username, "--password", "password123"]
     )
     assert result.exit_code == 0
@@ -96,13 +100,14 @@ def test_delete_account(pg_cli_runner: CliRunner):
     assert not _user_exists(username, password)
 
 
-def test_change_password(pg_cli_runner: CliRunner):
+@pytest.mark.parametrize("cli_runner", cli_runner_fixture)
+def test_change_password(cli_runner: CliRunner):
     """Can change the password of the user"""
     username = "johndoe"
     old_password = "password123"
     new_password = "anotherPassword4"
 
-    pg_cli_runner.invoke(
+    cli_runner.invoke(
         app,
         [
             "create-account",
@@ -116,7 +121,7 @@ def test_change_password(pg_cli_runner: CliRunner):
     )
     assert _user_exists(username, old_password)
 
-    result = pg_cli_runner.invoke(
+    result = cli_runner.invoke(
         app,
         [
             "change-password",
