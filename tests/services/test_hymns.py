@@ -8,13 +8,20 @@ from services.errors import NotFoundError
 from services.hymns.models import Song, LineSection, PaginatedResponse
 from services.types import MusicalNote
 from services.hymns.types import HymnsService
-from tests.services.scdb.conftest import songs_fixture, songs_langs_fixture, languages
+from .conftest import (
+    songs_fixture,
+    songs_langs_fixture,
+    languages,
+    service_db_path_fixture,
+    hymns_service_fixture,
+)
 
 
 @pytest.mark.asyncio
-async def test_initialize(service_root_path):
+@pytest.mark.parametrize("service_db_uri", service_db_path_fixture)
+async def test_initialize(service_db_uri):
     """initialize initializes the hymns store and everything required"""
-    hymns_service = await hymns.initialize(service_root_path)
+    hymns_service = await hymns.initialize(service_db_uri)
     assert isinstance(hymns_service, hymns.types.HymnsService)
 
 
@@ -75,10 +82,8 @@ async def test_get_song_by_number_not_found(service: HymnsService, song: Song):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("service, song, languages", songs_langs_fixture)
-async def test_delete_song_requires_title_or_number(
-    service: HymnsService, song: Song, languages: List[str]
-):
+@pytest.mark.parametrize("service, song", songs_fixture)
+async def test_delete_song_requires_title_or_number(service: HymnsService, song: Song):
     """delete_song requires a number or a title or returns a result with a ValidationError"""
     await hymns.add_song(service, song=song)
     res = await hymns.delete_song(service)
@@ -88,10 +93,8 @@ async def test_delete_song_requires_title_or_number(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("service, song, languages", songs_langs_fixture)
-async def test_delete_song_not_found(
-    service: HymnsService, song: Song, languages: List[str]
-):
+@pytest.mark.parametrize("service, song", songs_fixture)
+async def test_delete_song_not_found(service: HymnsService, song: Song):
     """delete_song a non existent song returns a result with a NotFoundError"""
     res = await hymns.delete_song(service, title=song.title)
     err = _extract_exception(res)
@@ -103,14 +106,12 @@ async def test_delete_song_not_found(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("service, song, languages", songs_langs_fixture)
+@pytest.mark.parametrize("service, song, langs", songs_langs_fixture)
 async def test_delete_song_by_title_all_langs(
-    service: HymnsService, song: Song, languages: List[str]
+    service: HymnsService, song: Song, langs: List[str]
 ):
     """delete_song removes the song of the given title from all languages from the hymns store"""
-    song_versions = [
-        Song(**{**ml.to_dict(song), "language": lang}) for lang in languages
-    ]
+    song_versions = [Song(**{**song.dict(), "language": lang}) for lang in langs]
     for song_version in song_versions:
         await hymns.add_song(service, song=song_version)
 
@@ -122,38 +123,37 @@ async def test_delete_song_by_title_all_langs(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("service, song, languages", songs_langs_fixture)
+@pytest.mark.parametrize("service, song, langs", songs_langs_fixture)
 async def test_delete_song_by_number_all_langs(
-    service: HymnsService, song: Song, languages: List[str]
+    service: HymnsService, song: Song, langs: List[str]
 ):
     """delete_song removes the song of the given number from all languages from the hymns store"""
-    song_versions = [
-        Song(**{**ml.to_dict(song), "language": lang}) for lang in languages
-    ]
+    song_versions = [Song(**{**song.dict(), "language": lang}) for lang in langs]
 
     for song_version in song_versions:
         await hymns.add_song(service, song=song_version)
 
     res = await hymns.delete_song(service, number=song.number)
-    assert res == ml.Result.OK(song_versions)
+    expected = ml.Result.OK(song_versions)
+    res.value.sort(key=song_key_func)
+    expected.value.sort(key=song_key_func)
+    assert res == expected
 
     for song_version in song_versions:
         await _assert_song_does_not_exist(service, song_version)
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("service, song, languages", songs_langs_fixture)
+@pytest.mark.parametrize("service, song, langs", songs_langs_fixture)
 async def test_delete_song_by_title_one_lang(
-    service: HymnsService, song: Song, languages: List[str]
+    service: HymnsService, song: Song, langs: List[str]
 ):
     """delete_song removes the song of the given title from one language from the hymns store"""
-    song_versions = {
-        lang: Song(**{**ml.to_dict(song), "language": lang}) for lang in languages
-    }
+    song_versions = {lang: Song(**{**song.dict(), "language": lang}) for lang in langs}
     for song_version in song_versions.values():
         await hymns.add_song(service, song=song_version)
 
-    for lang in languages:
+    for lang in langs:
         await _assert_song_exists(service, song_versions[lang])
 
         res = await hymns.delete_song(service, title=song.title, language=lang)
@@ -163,18 +163,16 @@ async def test_delete_song_by_title_one_lang(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("service, song, languages", songs_langs_fixture)
+@pytest.mark.parametrize("service, song, langs", songs_langs_fixture)
 async def test_delete_song_by_number_one_lang(
-    service: HymnsService, song: Song, languages: List[str]
+    service: HymnsService, song: Song, langs: List[str]
 ):
     """delete_song removes the song of the given number from one language from the hymns store"""
-    song_versions = {
-        lang: Song(**{**ml.to_dict(song), "language": lang}) for lang in languages
-    }
+    song_versions = {lang: Song(**{**song.dict(), "language": lang}) for lang in langs}
     for song_version in song_versions.values():
         await hymns.add_song(service, song=song_version)
 
-    for lang in languages:
+    for lang in langs:
         await _assert_song_exists(service, song_versions[lang])
 
         res = await hymns.delete_song(service, number=song.number, language=lang)
@@ -184,7 +182,8 @@ async def test_delete_song_by_number_one_lang(
 
 
 @pytest.mark.asyncio
-async def test_query_song_by_title(hymns_service: HymnsService):
+@pytest.mark.parametrize("service", hymns_service_fixture)
+async def test_query_song_by_title(service: HymnsService):
     """query_song_by_title queries for songs whose title start with a given phrase"""
     song_data = dict(
         key=MusicalNote.F_MAJOR,
@@ -221,24 +220,29 @@ async def test_query_song_by_title(hymns_service: HymnsService):
     for lang in languages:
         for num, title in nums_and_titles:
             song = Song(**song_data, title=title, number=num, language=lang)
-            await hymns.add_song(hymns_service, song=song)
+            await hymns.add_song(service, song=song)
 
     for lang in languages:
         for q, skip, limit, expected_nums_and_titles in test_data:
-            expected = [
+            expected_data = [
                 Song(**song_data, title=title, number=num, language=lang)
                 for num, title in expected_nums_and_titles
             ]
+            expected = ml.Result.OK(
+                PaginatedResponse(data=expected_data, skip=skip, limit=limit)
+            )
             res = await hymns.query_songs_by_title(
-                hymns_service, q, language=lang, skip=skip, limit=limit
+                service, q, language=lang, skip=skip, limit=limit
             )
-            assert res == ml.Result.OK(
-                PaginatedResponse(data=expected, skip=skip, limit=limit)
-            )
+
+            res.value.data.sort(key=song_key_func)
+            expected.value.data.sort(key=song_key_func)
+            assert res == expected
 
 
 @pytest.mark.asyncio
-async def test_query_song_by_number(hymns_service: HymnsService):
+@pytest.mark.parametrize("service", hymns_service_fixture)
+async def test_query_song_by_number(service: HymnsService):
     """query_song_by_title queries for songs whose song number start with a given set of digits"""
     song_data = dict(
         key=MusicalNote.F_MAJOR,
@@ -273,20 +277,24 @@ async def test_query_song_by_number(hymns_service: HymnsService):
     for lang in languages:
         for num, title in nums_and_titles:
             song = Song(**song_data, title=title, number=num, language=lang)
-            await hymns.add_song(hymns_service, song=song)
+            await hymns.add_song(service, song=song)
 
     for lang in languages:
         for q, skip, limit, expected_nums_and_titles in test_data:
-            expected = [
+            expected_data = [
                 Song(**song_data, title=title, number=num, language=lang)
                 for num, title in expected_nums_and_titles
             ]
+            expected = ml.Result.OK(
+                PaginatedResponse(data=expected_data, skip=skip, limit=limit)
+            )
             res = await hymns.query_songs_by_number(
-                hymns_service, q, language=lang, skip=skip, limit=limit
+                service, q, language=lang, skip=skip, limit=limit
             )
-            assert res == ml.Result.OK(
-                PaginatedResponse(data=expected, skip=skip, limit=limit)
-            )
+
+            res.value.data.sort(key=song_key_func)
+            expected.value.data.sort(key=song_key_func)
+            assert res == expected
 
 
 async def _assert_song_exists(service, song):
@@ -295,6 +303,11 @@ async def _assert_song_exists(service, song):
         service, title=song.title, language=song.language
     )
     assert res == ml.Result.OK(song)
+
+
+def song_key_func(v: Song) -> str:
+    """the sort key function for sorting song lists uniformly"""
+    return f"{v.number}{v.language}{v.title}"
 
 
 async def _assert_song_does_not_exist(service, song):

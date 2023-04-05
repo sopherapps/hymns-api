@@ -60,12 +60,12 @@ class ScdbStore(Store[T]):
         store_path = path.join(uri, name)
         self.__store = py_scdb.AsyncStore(store_path=store_path, **dict(options))
 
-        self.__lang, pk_field = get_store_language_and_pk_field(name)
-        self.__store_path = store_path
+        self._lang, pk_field = get_store_language_and_pk_field(name)
+        self._store_path = store_path
 
-        if self.__lang:
+        if self._lang:
             lang_subscribers = ScdbStore.__observer_registry__.setdefault(
-                self.__lang, {}
+                self._lang, {}
             )
             lang_subscribers[store_path] = Observer(
                 store=self.__store, pk_field=pk_field
@@ -73,7 +73,7 @@ class ScdbStore(Store[T]):
 
     def __del__(self):
         try:
-            del ScdbStore.__observer_registry__[self.__lang][self.__store_path]
+            del ScdbStore.__observer_registry__[self._lang][self._store_path]
         except KeyError:
             pass
 
@@ -92,7 +92,7 @@ class ScdbStore(Store[T]):
     async def delete(self, k: str) -> List[T]:
         value = await self.get(k)
         if isinstance(value, self._model):
-            if self.__lang:
+            if self._lang:
                 await self.__send_event(Event.DEL(value))
             else:
                 await self.__store.delete(k)
@@ -108,7 +108,7 @@ class ScdbStore(Store[T]):
 
     async def __send_event(self, ev: Event):
         """Tries to send the event to the observer registry"""
-        observers = ScdbStore.__observer_registry__.get(self.__lang, {}).values()
+        observers = ScdbStore.__observer_registry__.get(self._lang, {}).values()
 
         for observer in observers:
             await observer.handle_event(ev)

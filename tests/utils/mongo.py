@@ -1,9 +1,11 @@
 import pymongo
 import pyotp
 from cryptography.fernet import Fernet
+from motor.motor_asyncio import AsyncIOMotorCollection
 
 from services.auth.models import UserDTO
 from services.auth.utils import encrypt_str, hash_password
+from services.store import MongoStore, Store
 
 
 def clear_mongo_db(uri: str):
@@ -39,3 +41,21 @@ def mongo_upsert_user(db_uri: str, fernet: Fernet, user: UserDTO):
         )
     finally:
         client.close()
+
+
+async def is_mongo_titles_store(store: Store, lang: str):
+    """Asserts that the mongo store passed is a titles store for given language"""
+    assert isinstance(store, MongoStore)
+    assert store._search_field == "title"
+    assert store._lang == lang
+    assert isinstance(store._collection, AsyncIOMotorCollection)
+    assert store._collection.full_name == f"data.songs"
+
+
+async def is_mongo_numbers_store(store: Store, lang: str):
+    """Asserts that the mongo store passed is a numbers store for given language"""
+    assert isinstance(store, MongoStore)
+    assert store._search_field == "number"
+    assert store._lang == lang
+    assert isinstance(store._collection, AsyncIOMotorCollection)
+    assert store._collection.full_name == f"data.songs"

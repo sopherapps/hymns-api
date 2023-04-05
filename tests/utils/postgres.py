@@ -5,6 +5,7 @@ from sqlalchemy import make_url
 
 from services.auth.models import UserDTO
 from services.auth.utils import encrypt_str, hash_password
+from services.store import PgStore, Store
 
 
 async def create_pg_db_if_not_exists(db_uri: str):
@@ -155,3 +156,23 @@ async def pg_table_exists(db_uri: str, table: str) -> bool:
         await conn.close()
 
     return exists
+
+
+async def is_pg_titles_store(store: Store, lang: str):
+    """Asserts that the postgres store passed is a titles store for given language"""
+    assert isinstance(store, PgStore)
+    assert store._search_field == "title"
+    assert store._lang == lang
+
+    await store._create_table_if_not_created(force=True)
+    assert await pg_table_exists(store._uri, "songs")
+
+
+async def is_pg_numbers_store(store: Store, lang: str):
+    """Asserts that the postgres store passed is a numbers store for given language"""
+    assert isinstance(store, PgStore)
+    assert store._search_field == "number"
+    assert store._lang == lang
+
+    await store._create_table_if_not_created(force=True)
+    assert await pg_table_exists(store._uri, "songs")

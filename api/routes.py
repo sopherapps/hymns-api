@@ -14,7 +14,7 @@ import funml as ml
 from fastapi.responses import Response
 
 import settings
-import tests.services.scdb.conftest
+import tests.services.scdb.j
 from api.models import (
     Song,
     SongDetail,

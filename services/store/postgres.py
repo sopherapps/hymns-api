@@ -50,11 +50,11 @@ class PgStore(Store[T]):
         super().__init__(uri, name, model, options)
 
         table_name = get_table_name(name)
-        self.__uri = uri
+        self._uri = uri
         self.__table_name = table_name
         self.__full_tablename = f"{uri}/{table_name}"
         self.__pk_fields = get_pk_fields(table_name)
-        self.__lang, self._search_field = get_store_language_and_pk_field(name)
+        self._lang, self._search_field = get_store_language_and_pk_field(name)
 
         PgStore.__register_engine_if_not_exists(uri, options)
         PgStore._add_table_if_not_exists(table_name, uri)
@@ -62,12 +62,12 @@ class PgStore(Store[T]):
     @property
     def __table(self):
         """The table associated with this store"""
-        return PgStore.__engines__[self.__uri].tables[self.__table_name]
+        return PgStore.__engines__[self._uri].tables[self.__table_name]
 
     @property
     def __engine(self):
         """The engine associated with this store"""
-        return PgStore.__engines__[self.__uri].engine
+        return PgStore.__engines__[self._uri].engine
 
     @property
     def __is_table_created(self):
@@ -204,8 +204,8 @@ class PgStore(Store[T]):
         else:
             clauses = [search_col == search_value]
 
-        if self.__lang:
-            clauses.append(self.__table.c.language == self.__lang)
+        if self._lang:
+            clauses.append(self.__table.c.language == self._lang)
 
         return clauses
 

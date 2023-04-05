@@ -4,6 +4,7 @@ import pytest
 from services.store import PgStore, MongoStore
 from tests.utils.mongo import clear_mongo_db
 from tests.utils.postgres import drop_pg_db_if_exists, create_pg_db_if_not_exists
+from tests.utils.scdb import delete_folder
 from tests.utils.shared import (
     aio_pytest_fixture,
 )
@@ -15,6 +16,14 @@ _ROOT_FOLDER_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def root_folder_path():
     """the path to the root folder"""
     yield _ROOT_FOLDER_PATH
+
+
+@pytest.fixture()
+def test_scdb_path(root_folder_path):
+    """the path to the test db for scdb"""
+    db_path = os.path.join(root_folder_path, "test_db")
+    yield db_path
+    delete_folder(db_path)
 
 
 @aio_pytest_fixture
