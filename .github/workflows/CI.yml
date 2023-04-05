@@ -63,5 +63,5 @@ jobs:
           cd $GITHUB_WORKSPACE
           pytest
         env:
-          TEST_PG_DATABASE_URI: "postgres://postgres:password4uNme@localhost:5432/test_db"
+          TEST_PG_DATABASE_URI: "postgresql://postgres:password4uNme@localhost:5432/test_db"
           TEST_MONGO_DATABASE_URI: "mongodb://mongo_user:mongo_pass@localhost:27017"
