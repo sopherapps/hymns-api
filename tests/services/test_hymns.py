@@ -227,61 +227,84 @@ async def test_delete_song_by_title_all_langs(
     service: HymnsService, song: Song, langs: List[str]
 ):
     """delete_song removes the song of the given title from all languages from the hymns store"""
-    song_versions = [Song(**{**song.dict(), "language": lang}) for lang in langs]
+    song_versions = [
+        Song(
+            **{
+                **song.dict(),
+                "language": lang,
+                "title": f"{song.title}title_all_langs",
+                "number": song.number + 30,
+            }
+        )
+        for lang in langs
+    ]
 
-    # Just to make sure these don't conflict, I am running all these in a single test
-    await _test_delete_song_by_title_all_langs(service, song_versions)
-    await _test_delete_song_by_number_all_langs(service, song_versions)
-
-    song_versions = {lang: Song(**{**song.dict(), "language": lang}) for lang in langs}
-    await _test_delete_song_by_title_one_lang(service, songs=song_versions, langs=langs)
-    await _test_delete_song_by_number_one_lang(
-        service, songs=song_versions, langs=langs
-    )
-
-
-async def _test_delete_song_by_title_all_langs(
-    service: HymnsService, songs: List[Song]
-):
-    """delete_song removes the song of the given title from all languages from the hymns store"""
-    for song in songs:
+    for song in song_versions:
         await hymns.add_song(service, song=song)
 
-    res = await hymns.delete_song(service, title=songs[0].title)
-    assert res == ml.Result.OK(songs)
+    res = await hymns.delete_song(service, title=song_versions[0].title)
+    assert res == ml.Result.OK(song_versions)
 
-    for song in songs:
+    for song in song_versions:
         await _assert_song_does_not_exist(service, song)
 
 
-async def _test_delete_song_by_number_all_langs(
-    service: HymnsService, songs: List[Song]
+@pytest.mark.asyncio
+@pytest.mark.parametrize("service, song, langs", songs_langs_fixture)
+async def test_delete_song_by_number_all_langs(
+    service: HymnsService, song: Song, langs: List[str]
 ):
     """delete_song removes the song of the given number from all languages from the hymns store"""
-    for song_version in songs:
+    song_versions = [
+        Song(
+            **{
+                **song.dict(),
+                "language": lang,
+                "title": f"{song.title}number_all_langs",
+                "number": song.number + 35,
+            }
+        )
+        for lang in langs
+    ]
+
+    for song_version in song_versions:
         await hymns.add_song(service, song=song_version)
 
-    number = songs[0].number
+    number = song_versions[0].number
 
     res = await hymns.delete_song(service, number=number)
-    expected = ml.Result.OK(songs)
+    expected = ml.Result.OK(song_versions)
     res.value.sort(key=song_key_func)
     expected.value.sort(key=song_key_func)
     assert res == expected
 
-    for song_version in songs:
+    for song_version in song_versions:
         await _assert_song_does_not_exist(service, song_version)
 
 
-async def _test_delete_song_by_title_one_lang(
-    service: HymnsService, songs: Dict[str, Song], langs: List[str]
+@pytest.mark.asyncio
+@pytest.mark.parametrize("service, song, langs", songs_langs_fixture)
+async def test_delete_song_by_title_one_lang(
+    service: HymnsService, song: Song, langs: List[str]
 ):
     """delete_song removes the song of the given title from one language from the hymns store"""
-    for song_version in songs.values():
+    song_versions = {
+        lang: Song(
+            **{
+                **song.dict(),
+                "language": lang,
+                "title": f"{song.title}title_one_lang",
+                "number": song.number + 25,
+            }
+        )
+        for lang in langs
+    }
+
+    for song_version in song_versions.values():
         await hymns.add_song(service, song=song_version)
 
     for lang in langs:
-        song = songs[lang]
+        song = song_versions[lang]
         await _assert_song_exists(service, song)
 
         res = await hymns.delete_song(service, title=song.title, language=lang)
@@ -290,15 +313,29 @@ async def _test_delete_song_by_title_one_lang(
         await _assert_song_does_not_exist(service, song)
 
 
-async def _test_delete_song_by_number_one_lang(
-    service: HymnsService, songs: Dict[str, Song], langs: List[str]
+@pytest.mark.asyncio
+@pytest.mark.parametrize("service, song, langs", songs_langs_fixture)
+async def test_delete_song_by_number_one_lang(
+    service: HymnsService, song: Song, langs: List[str]
 ):
     """delete_song removes the song of the given number from one language from the hymns store"""
-    for song_version in songs.values():
+    song_versions = {
+        lang: Song(
+            **{
+                **song.dict(),
+                "language": lang,
+                "title": f"{song.title}number_one_lang",
+                "number": song.number + 15,
+            }
+        )
+        for lang in langs
+    }
+
+    for song_version in song_versions.values():
         await hymns.add_song(service, song=song_version)
 
     for lang in langs:
-        song = songs[lang]
+        song = song_versions[lang]
         await _assert_song_exists(service, song)
 
         res = await hymns.delete_song(service, number=song.number, language=lang)
