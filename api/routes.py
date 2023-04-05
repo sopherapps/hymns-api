@@ -8,20 +8,15 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
-from fastapi.requests import Request
-
-import funml as ml
-from fastapi.responses import Response
 
 import settings
-import tests.services.scdb.j
 from api.models import (
     Song,
     SongDetail,
     PartialSong,
     OTPRequest,
 )
-from api.utils import try_to, raise_http_error
+from api.utils import try_to
 from services import hymns, config, auth
 
 from services.auth import is_valid_api_key
