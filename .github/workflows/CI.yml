@@ -40,7 +40,7 @@ jobs:
           - 27017:27017
         # Set health checks to wait until mongo has started
         options: >-
-          --health-cmd "echo 'db.stats().ok' | mongo localhost:27017/test --quiet"
+          --health-cmd "echo 'db.stats().ok' | mongosh localhost:27017/test --quiet"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
