@@ -31,19 +31,19 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-        mongodb:
-          image: mongo:latest
-          env:
-            MONGO_INITDB_ROOT_USERNAME: mongo_user
-            MONGO_INITDB_ROOT_PASSWORD: mongo_pass
-          ports:
-            - 27017:27017
-          # Set health checks to wait until mongo has started
-          options: >-
-            --health-cmd "echo 'db.stats().ok' | mongo localhost:27017/test --quiet"
-            --health-interval 10s
-            --health-timeout 5s
-            --health-retries 5
+      mongodb:
+        image: mongo:latest
+        env:
+          MONGO_INITDB_ROOT_USERNAME: mongo_user
+          MONGO_INITDB_ROOT_PASSWORD: mongo_pass
+        ports:
+          - 27017:27017
+        # Set health checks to wait until mongo has started
+        options: >-
+          --health-cmd "echo 'db.stats().ok' | mongo localhost:27017/test --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
@@ -55,7 +55,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python --version
-          pip install -r dev-requirements.txt
+          pip install -r requirements/dev.txt
       - name: Lint with black
         run: black --check .
       - name: Run tests
