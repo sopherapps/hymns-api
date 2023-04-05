@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 
+import pymongo
 import pyotp
 import pytest
 import pytest_asyncio
@@ -263,3 +264,18 @@ async def pg_table_exists(db_uri: str, table: str) -> bool:
 def get_rate_limit_string(num_per_second: int) -> str:
     """Converts a number of requests per second to the string notation for the slowapi library"""
     return f"{num_per_second} per 1 second"
+
+
+def clear_mongo_db(uri: str):
+    """Clears the database at the given URI
+
+    Args:
+        uri: the URI of the mongodb server
+    """
+    db = pymongo.MongoClient(uri)
+    for db_name in db.list_database_names():
+        try:
+            db.drop_database(db_name)
+        except pymongo.errors.OperationFailure as exp:
+            if "dropping the 'admin' database is prohibited" not in f"{exp}".lower():
+                raise exp

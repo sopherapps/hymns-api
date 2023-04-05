@@ -50,12 +50,6 @@ class Store(Generic[T]):
         for cls_name in cls_names:
             await Store._registry[cls_name]._clean_up()
 
-    @staticmethod
-    @abstractmethod
-    async def _clean_up():
-        """Cleans up all store instances"""
-        raise NotImplementedError("clean_up not implemented")
-
     @abstractmethod
     async def set(self, k: str, v: T, **kwargs) -> None:
         """
@@ -106,3 +100,9 @@ class Store(Generic[T]):
         Removes all data in the store
         """
         raise NotImplementedError("clear not implemented")
+
+    @staticmethod
+    @abstractmethod
+    async def _clean_up():
+        """Cleans up all store instances"""
+        raise NotImplementedError("clean_up not implemented")

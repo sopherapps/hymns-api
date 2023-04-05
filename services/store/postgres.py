@@ -2,18 +2,19 @@
 import dataclasses
 from typing import TypeVar, Type, Optional, List, Dict, Any
 
-import sqlalchemy
 from pydantic import BaseModel
 from sqlalchemy import MetaData, Table, select, RowMapping, delete
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from services.store.base import Store
-from services.store.utils.collections import get_store_language_and_pk_field
-from services.store.utils.sqlachemy import (
+from services.store.utils.collections import (
+    get_store_language_and_pk_field,
     get_table_name,
+    get_pk_fields,
+)
+from services.store.utils.sqlachemy import (
     get_table_columns,
-    get_dependent_tables,
     extract_data_for_table,
     conv_model_to_dict,
     conv_dict_to_model,
@@ -49,18 +50,14 @@ class PgStore(Store[T]):
         super().__init__(uri, name, model, options)
 
         table_name = get_table_name(name)
-        self.__engine_options = options
         self.__uri = uri
         self.__table_name = table_name
         self.__full_tablename = f"{uri}/{table_name}"
+        self.__pk_fields = get_pk_fields(table_name)
         self.__lang, self._search_field = get_store_language_and_pk_field(name)
 
         PgStore.__register_engine_if_not_exists(uri, options)
         PgStore._add_table_if_not_exists(table_name, uri)
-
-        self.__pk_fields = [
-            col.name for col in self.__table.primary_key.columns.values()
-        ]
 
     @property
     def __table(self):
@@ -227,10 +224,6 @@ class PgStore(Store[T]):
         if table_name in PgStore.__engines__[uri].tables:
             return
 
-        dependent_tables = get_dependent_tables(table_name)
-        for name in dependent_tables:
-            PgStore._add_table_if_not_exists(name, uri)
-
         columns = get_table_columns(table_name)
         table = Table(table_name, PgStore.__engines__[uri].metadata, *columns)
         PgStore.__engines__[uri].tables[table_name] = table
@@ -251,7 +244,7 @@ class PgStore(Store[T]):
 
     @staticmethod
     def __register_engine_if_not_exists(uri: str, options: PgConfig):
-        """Registers the engine attached to this instance if has not yet been registered"""
+        """Registers the engine for the given uri if it has not yet been registered"""
         if uri not in PgStore.__engines__:
             conf = options.dict(exclude_none=True)
             engine = create_async_engine(get_pg_async_uri(uri), **conf)
