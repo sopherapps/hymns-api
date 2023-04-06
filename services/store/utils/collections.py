@@ -22,7 +22,7 @@ _table_pk_field_map: Dict[str, List[str]] = {
 }
 
 
-def get_store_language_and_pk_field(store_name: str) -> Tuple[Optional[str], str]:
+def get_store_language_and_search_field(store_name: str) -> Tuple[Optional[str], str]:
     """Gets the language of the store if the store is for songs, and the primary key field
 
     Args:

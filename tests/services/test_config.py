@@ -1,7 +1,5 @@
 import pytest
 
-import tests.utils.shared
-
 from services.config import (
     save_service_config,
     get_service_config,
@@ -54,7 +52,7 @@ async def test_get_titles_store(db_path, conf, is_titles_store_for_lang):
     """get_titles_store creates the songs table, with search field as title"""
     await save_service_config(db_path, conf)
 
-    for lang in tests.utils.shared.languages:
+    for lang in conf.languages:
         store = get_titles_store(service_conf=conf, uri=db_path, lang=lang)
         await is_titles_store_for_lang(store, lang)
 
@@ -67,6 +65,6 @@ async def test_get_numbers_store(db_path, conf, is_numbers_store_for_lang):
     """get_numbers_store creates the songs table, with search field as number"""
     await save_service_config(db_path, conf)
 
-    for lang in tests.utils.shared.languages:
+    for lang in conf.languages:
         store = get_numbers_store(service_conf=conf, uri=db_path, lang=lang)
         await is_numbers_store_for_lang(store, lang)

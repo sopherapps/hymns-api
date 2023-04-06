@@ -81,7 +81,7 @@ async def delete_from_one_store(
         songs_map = {
             f"{song.number}-{song.title}-{song.language}": song for song in songs
         }
-        deleted_songs = {**songs_map}
+        deleted_songs = {**deleted_songs, **songs_map}
         err_msg += f"number {number}, "
 
     if len(deleted_songs) > 0:

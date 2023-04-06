@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from services.store.base import Store
 from services.store.utils.collections import (
-    get_store_language_and_pk_field,
+    get_store_language_and_search_field,
     get_table_name,
     get_pk_fields,
 )
@@ -54,7 +54,7 @@ class PgStore(Store[T]):
         self.__table_name = table_name
         self.__full_tablename = f"{uri}/{table_name}"
         self.__pk_fields = get_pk_fields(table_name)
-        self._lang, self._search_field = get_store_language_and_pk_field(name)
+        self._lang, self._search_field = get_store_language_and_search_field(name)
 
         PgStore.__register_engine_if_not_exists(uri, options)
         PgStore._add_table_if_not_exists(table_name, uri)

@@ -12,7 +12,7 @@ from motor.motor_asyncio import (
 
 from services.store import Store
 from services.store.utils.collections import (
-    get_store_language_and_pk_field,
+    get_store_language_and_search_field,
     get_table_name,
     get_pk_fields,
 )
@@ -54,7 +54,7 @@ class MongoStore(Store[T]):
         self.__uri = uri
         self.__database_name = options.db_name
         self.__collection_name = get_table_name(name)
-        self._lang, self._search_field = get_store_language_and_pk_field(name)
+        self._lang, self._search_field = get_store_language_and_search_field(name)
         self.__pk_fields = get_pk_fields(self.__collection_name)
 
         self.__register_client_if_not_exists(conn_conf)

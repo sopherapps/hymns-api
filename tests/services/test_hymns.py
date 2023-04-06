@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List
 
 import funml as ml
 import pytest
@@ -304,13 +304,13 @@ async def test_delete_song_by_title_one_lang(
         await hymns.add_song(service, song=song_version)
 
     for lang in langs:
-        song = song_versions[lang]
-        await _assert_song_exists(service, song)
+        song_version = song_versions[lang]
+        await _assert_song_exists(service, song_version)
 
-        res = await hymns.delete_song(service, title=song.title, language=lang)
-        assert res == ml.Result.OK([song])
+        res = await hymns.delete_song(service, title=song_version.title, language=lang)
+        assert res == ml.Result.OK([song_version])
 
-        await _assert_song_does_not_exist(service, song)
+        await _assert_song_does_not_exist(service, song_version)
 
 
 @pytest.mark.asyncio
@@ -335,13 +335,15 @@ async def test_delete_song_by_number_one_lang(
         await hymns.add_song(service, song=song_version)
 
     for lang in langs:
-        song = song_versions[lang]
-        await _assert_song_exists(service, song)
+        song_version = song_versions[lang]
+        await _assert_song_exists(service, song_version)
 
-        res = await hymns.delete_song(service, number=song.number, language=lang)
-        assert res == ml.Result.OK([song])
+        res = await hymns.delete_song(
+            service, number=song_version.number, language=lang
+        )
+        assert res == ml.Result.OK([song_version])
 
-        await _assert_song_does_not_exist(service, song)
+        await _assert_song_does_not_exist(service, song_version)
 
 
 async def _assert_song_exists(service, song):
