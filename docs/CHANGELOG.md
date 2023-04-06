@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+- Removed scdb as it is problematic
+
 ### Fixed
 
 ## [0.0.1] - 2023-01-05

@@ -112,12 +112,5 @@ def _get_config_store(uri: str | bytes | PathLike[bytes]) -> Store:
 class ServiceConfig(Config):
     """The configuration for the entire service"""
 
-    # Db Config
-    max_keys: int = 2_000_000
-    redundant_blocks: int = 2
-    pool_capacity: int = 5
-    compaction_interval: int = 3600
-    is_search_enabled: bool = True
-
     # General
     languages: list[str] = []

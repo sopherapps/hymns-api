@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 from api.routes import app
 from services import auth
 from tests.utils.postgres import create_pg_user_table, pg_upsert_user
-from tests.utils.scdb import delete_folder, scdb_upsert_user
 
 from tests.utils.shared import (
     setup_mail_config,
@@ -21,17 +20,14 @@ from tests.utils.shared import (
 from tests.utils.mongo import mongo_upsert_user
 
 # For testing routes that need songs and languages
-api_songs_langs_fixture = (
-    [(lazy_fixture("mongo_test_client"), song, languages) for song in songs]
-    + [(lazy_fixture("pg_test_client"), song, languages) for song in songs]
-    + [(lazy_fixture("scdb_test_client"), song, languages) for song in songs]
-)
+api_songs_langs_fixture = [
+    (lazy_fixture("mongo_test_client"), song, languages) for song in songs
+] + [(lazy_fixture("pg_test_client"), song, languages) for song in songs]
 
 # For testing using just plain api clients
 test_clients_fixture = [
     lazy_fixture("mongo_test_client"),
     lazy_fixture("pg_test_client"),
-    lazy_fixture("scdb_test_client"),
 ]
 
 
@@ -39,7 +35,6 @@ test_clients_fixture = [
 test_clients_rate_limits_fixture = [
     lazy_fixture("mongo_test_client_and_rate_limit"),
     lazy_fixture("pg_test_client_and_rate_limit"),
-    lazy_fixture("scdb_test_client_and_rate_limit"),
 ]
 
 
@@ -91,32 +86,6 @@ async def pg_test_client_and_rate_limit(test_pg_path, request):
 
     yield TestClient(app), rate_limit
     app.state.limiter.reset()
-
-
-@aio_pytest_fixture
-async def scdb_test_client(root_folder_path):
-    """the http test client for testing the API part of the project"""
-    db_path = os.path.join(root_folder_path, "test_db")
-    api_secret = _prepare_api_env(db_path)
-
-    await scdb_upsert_user(db_path, fernet=Fernet(api_secret), user=test_user)
-
-    yield TestClient(app)
-    delete_folder(db_path)
-
-
-@aio_pytest_fixture(params=rate_limits_per_second)
-async def scdb_test_client_and_rate_limit(root_folder_path, request):
-    """Returns a rate limited test client for testing the API"""
-    rate_limit = request.param
-    db_path = os.path.join(root_folder_path, "test_db")
-    api_secret = _prepare_api_env(db_path, rate_limit)
-
-    await scdb_upsert_user(db_path, fernet=Fernet(api_secret), user=test_user)
-
-    yield TestClient(app), rate_limit
-    app.state.limiter.reset()
-    delete_folder(db_path)
 
 
 def _prepare_api_env(db_path: str, rate_limit: Optional[int] = None) -> str:

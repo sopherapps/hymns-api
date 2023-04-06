@@ -26,7 +26,11 @@ This is a general API that can host hymns/songs including their musical notation
 - [Python v3.11+](https://python.org) - the programming language
 - [FastAPI](https://fastapi.tiangolo.com/) - web server
 - [Typer CLI](https://typer.tiangolo.com/typer-cli/) - for CLI commands
-- [py_scdb](https://github.com/sopherapps/py_scdb) - embedded database
+- [postgres](https://www.postgresql.org/) - relational database
+- [mongodb](https://www.mongodb.com/) - database
+- [sqlalchemy](https://www.sqlalchemy.org/) - ORM for rdbms
+- [asyncpg](https://magicstack.github.io/asyncpg/current/) - to connect to postgres asynchronously
+- [motor](https://motor.readthedocs.io/en/stable/) - to connect to mongodb asynchronously
 - [slowapi](https://pypi.org/project/slowapi/) - rate-limiting
 - [pyotp](https://pyauth.github.io/pyotp/) - for one time passwords
 - [fastapi-mail](https://sabuhish.github.io/fastapi-mail/) - for sending emails
@@ -35,11 +39,7 @@ This is a general API that can host hymns/songs including their musical notation
 
 | Environment Variable    | Meaning                                                                                | Default           |
 |-------------------------|----------------------------------------------------------------------------------------|-------------------|
-| DB_PATH                 | path to the scdb database folder                                                       | `./db`            |
-| MAX_HYMNS               | maximum number of hymns to house in app                                                | 2000000           |
-| DB_REDUNDANCY_BLOCKS    | number of redundant buffer blocks for extra keys in scdb                               | 2                 |
-| DB_BUFFER_POOL_CAPACITY | scdb number of memory buffers                                                          | 5                 |
-| DB_COMPACTION_INTERVAL  | scdb interval in seconds for compacting/defragmenting database files                   | 3600              |
+| DB_PATH                 | database URI                                                                           | `./db`            |
 | LANGUAGES               | comma-separated list of languages that the song bank will have                         | `english,runyoro` |
 | API_KEY_LENGTH          | the length of the API keys generated                                                   | 32                |
 | RATE_LIMIT              | the maximum number of requests per window (e.g. second) allowed from one IP address    | `5/minute`        |
@@ -91,13 +91,6 @@ pip install -r requirements/prod.txt
 ```shell
 gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b :8000 main:app
 ```
-
-NOTE: If you are using scdb, ensure it is only one worker as scdb has unexpected behaviour when run on multiple workers.
-    i.e.  
-
-    ```shell
-    gunicorn -w 1 -k uvicorn.workers.UvicornWorker -b :8000 main:app
-    ```
 
 
 - Run the CLI app, and see the menu for the different commands

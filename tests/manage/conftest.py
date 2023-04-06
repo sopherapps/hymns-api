@@ -5,14 +5,12 @@ from pytest_lazyfixture import lazy_fixture
 from typer.testing import CliRunner
 
 from api.routes import app
-from tests.utils.scdb import delete_folder
 
 from tests.utils.shared import setup_mail_config, aio_pytest_fixture
 
 cli_runner_fixture = [
     (lazy_fixture("pg_cli_runner")),
     (lazy_fixture("mongo_cli_runner")),
-    (lazy_fixture("scdb_cli_runner")),
 ]
 
 
@@ -30,16 +28,6 @@ async def mongo_cli_runner(test_mongo_path):
     _prepare_cli_env(test_mongo_path)
 
     yield CliRunner()
-
-
-@aio_pytest_fixture
-async def scdb_cli_runner(root_folder_path):
-    """the test client for the CLI part of the app"""
-    db_path = os.path.join(root_folder_path, "test_db")
-    _prepare_cli_env(db_path)
-
-    yield CliRunner()
-    delete_folder(db_path)
 
 
 def _prepare_cli_env(db_path: str):

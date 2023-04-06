@@ -6,7 +6,7 @@ def get_store_type(uri: str) -> str:
     parts = uri.split("://")
     if len(parts) > 1:
         return parts[0]
-    return "scdb"
+    raise ValueError(f"uri format '{uri}' not supported")
 
 
 def get_pg_async_uri(uri: str) -> str:
