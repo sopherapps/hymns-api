@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Type, TypeVar, Generic
 from pydantic import BaseModel
 
 from errors import ConfigurationError
-from services.store.utils.uri import get_store_type
+from services.store.utils.uri import get_store_type, escape_db_uri
 from services.utils import Config
 
 T = TypeVar("T", bound=BaseModel)
@@ -39,7 +39,8 @@ class Store(Generic[T]):
         try:
             store_cls = Store._registry[store_type]
             store_conf = store_cls.__store_config_cls__(**options.dict())
-            return store_cls(uri=uri, name=name, model=model, options=store_conf)
+            parsed_uri = escape_db_uri(uri)
+            return store_cls(uri=parsed_uri, name=name, model=model, options=store_conf)
         except KeyError:
             raise ConfigurationError(f"store of type: {store_type} does not exist")
 
