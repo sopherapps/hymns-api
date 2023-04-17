@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hymns Admin</title>
+    <link href="/static/css/output.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="h-screen flex flex-col">
+        <header class="text-gray-600 border-b border-gray-200">
+            <div class="container mx-auto flex flex-wrap p-5 flex-col md:flex-row items-center">
+                <a class="flex title-font font-medium items-center text-gray-900 mb-4 md:mb-0">
+                    <span class="ml-3 text-sm">Hymns Admin</span>
+                </a>
+                <nav class="md:ml-auto flex flex-wrap items-center text-sm justify-center">
+                    <button
+                        class="inline-flex items-center bg-gray-100 border-0 py-1 px-3 focus:outline-none hover:bg-gray-200 rounded text-sm mt-4 md:mt-0">Website
+                        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="2" class="w-4 h-4 ml-1" viewBox="0 0 24 24">
+                            <path d="M5 12h14M12 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </nav>
+            </div>
+        </header>
+        <section class="flex text-gray-600 relative flex-1">
+            <div class="w-4/5 md:w-2/4 xl:w-1/4 flex justify-center items-center mx-auto">
+                <div class="flex flex-wrap px-5 py-5">
+                    <div class="w-full border-b border-gray-200 mb-5">
+                        <h2 class="py-3">Login</h2>
+                    </div>
+                    <div class="w-full">
+                        <div class="relative">
+                            <label for="username" class="leading-5 text-xs text-gray-600">Username</label>
+                            <input type="text" id="username" name="username"
+                                class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out">
+                        </div>
+                    </div>
+                    <div class="w-full">
+                        <div class="relative">
+                            <label for="password" class="leading-5 text-xs text-gray-600">Language</label>
+                            <input type="password" id="password" name="password"
+                                class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out">
+                        </div>
+                    </div>
+
+                    <button
+                        class="w-full text-white bg-indigo-500 border-0 py-1 px-3 my-5 focus:outline-none hover:bg-indigo-600 rounded text-sm">Login</button>
+                </div>
+            </div>
+        </section>
+        <footer class="text-gray-600">
+            <div class="bg-gray-100">
+                <div class="container mx-auto py-4 px-5 flex flex-wrap flex-col sm:flex-row">
+                    <p class="text-gray-500 text-sm text-center sm:text-left">© 2023 SopherApps —
+                        <a href="https://sopherapps.com" class="text-gray-600 ml-1" target="_blank"
+                            rel="noopener noreferrer">@sopherapps</a>
+                    </p>
+                    <span
+                        class="sm:ml-auto sm:mt-0 mt-2 sm:w-auto w-full sm:text-left text-center text-gray-500 text-sm">
+                        "Come to me, all you who are weary and burdened, and I will give you rest." - Matthew 11:
+                        28</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>

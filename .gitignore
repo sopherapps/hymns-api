@@ -169,3 +169,5 @@ db/
 .space
 
 env9/
+
+.DS_Store

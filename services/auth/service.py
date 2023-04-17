@@ -455,7 +455,7 @@ async def _send_email(
     user: UserInDb,
     title: str,
     msg: str,
-    template: Optional[str] = "default.html",
+    template: Optional[str] = "emails/default.html",
 ):
     """Sends an email to the user
 

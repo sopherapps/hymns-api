@@ -63,6 +63,27 @@ This is a general API that can host hymns/songs including their musical notation
 | MAIL_VALIDATE_CERTS     | whether to verify the mail server's certificate                                        | `true`            |
 | MAIL_TIMEOUT            | timeout in seconds when sending emails                                                 | 60                |
 
+
+## How to Develop the Front End (Templates)
+
+- Clone the repo
+
+```shell
+git clone git@github.com:sopherapps/hymns-api.git
+```
+
+- Install [tailwindcss cli](https://tailwindcss.com/blog/standalone-cli) if you haven't already
+- Enter the templates folder and run the tailwindcss generation command
+
+```shell
+cd templates
+tailwindcss -i ../static/css/input.css -o ../static/css/output.css --watch
+```
+
+- Install [live server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) and run it if you are using visual studio code.
+
+- Start editing your files, as you see the live changes in your browser
+
 ## How to Run
 
 - Clone the repo

@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[placeholder]:empty::before {
+  content: attr(placeholder);
+  color: grey;
+  opacity: 0.8;
+  cursor: text;
+}
+
+.tone-marker {
+  font-weight: bold;
+  font-size: 1em;
+  top: -1em;
+}
+
+a {
+  cursor: pointer;
+}

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hymns Admin</title>
+    <link href="/static/css/output.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="h-screen flex flex-col">
+        <header class="text-gray-600 border-b border-gray-200">
+            <div class="container mx-auto flex flex-wrap p-5 flex-col md:flex-row items-center">
+                <a class="flex title-font font-medium items-center text-gray-900 mb-4 md:mb-0">
+                    <span class="ml-3 text-sm">Hymns Admin</span>
+                </a>
+                <nav class="md:ml-auto flex flex-wrap items-center text-sm justify-center">
+                    <a class="block mr-5 hover:text-gray-900">Dashboard</a>
+                    <a class="block mr-5 hover:text-gray-900">Logout</a>
+                    <button
+                        class="inline-flex items-center bg-gray-100 border-0 py-1 px-3 focus:outline-none hover:bg-gray-200 rounded text-sm mt-4 md:mt-0">Website
+                        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="2" class="w-4 h-4 ml-1" viewBox="0 0 24 24">
+                            <path d="M5 12h14M12 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </nav>
+            </div>
+        </header>
+        <section class="text-gray-600 relative flex-1">
+            <div class="container px-5 py-5 mx-auto">
+                <div class="p-2 w-full">
+                    <div class="w-full flex flex-wrap sm:flex-nowrap sm:justify-between">
+                        <h2>Song List</h2>
+                        <div class="relative">
+                            <select
+                                class="w-full bg-gray-100 rounded border-0 relative focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out"
+                                id="language-selector">
+                                <option value="" selected disabled hidden>Choose language</option>
+                                <option value="english">English</option>
+                                <option value="runyoro">Runyoro</option>
+                                <option value="luganda">Luganda</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="relative py-10">
+
+                        <div class="block rounded">
+                            <div class="flex flex-col">
+                                <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
+                                    <div class="inline-block min-w-full sm:px-6 lg:px-8">
+                                        <div class="overflow-hidden">
+                                            <table class="min-w-full mb-0">
+                                                <thead class="border bg-gray-50 rounded-t text-left">
+                                                    <tr>
+                                                        <th scope="col"
+                                                            class="rounded-tl-lg text-sm font-medium px-6 py-4">SONG
+                                                        </th>
+                                                        <th scope="col"
+                                                            class="rounded-tr-lg text-sm font-medium px-6 py-4"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="border">
+                                                        <th scope="row"
+                                                            class="text-sm font-normal px-6 py-4 whitespace-nowrap text-left">
+                                                            <div class="flex flex-row items-center">
+                                                                <div class="ml-4">
+                                                                    <p class="mb-0.5 text-gray-500 font-medium">150</p>
+                                                                    <p class="mb-0.5">
+                                                                        We love the LORD</p>
+                                                                </div>
+                                                            </div>
+                                                        </th>
+                                                        <td
+                                                            class="align-middle text-right text-sm font-normal px-6 py-4 whitespace-nowrap">
+                                                            <a href="/english/edit/150"
+                                                                class="font-medium text-indigo-500 hover:text-indigo-600 focus:text-indigo-600 active:text-indigo-700 transition duration-300 ease-in-out">Edit</a>
+                                                            <button data-song-number="150"
+                                                                onclick="handleDeleteBtnClick(event)"
+                                                                class="font-medium text-red-500 hover:text-red-600 focus:text-red-600 active:text-red-700 transition duration-300 ease-in-out">Delete</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr class="border">
+                                                        <th scope="row"
+                                                            class="text-sm font-normal px-6 py-4 whitespace-nowrap text-left">
+                                                            <div class="flex flex-row items-center">
+                                                                <div class="ml-4">
+                                                                    <p class="mb-0.5 text-gray-500 font-medium">151</p>
+                                                                    <p class="mb-0.5">
+                                                                        The LORD is good</p>
+                                                                </div>
+                                                            </div>
+                                                        </th>
+                                                        <td
+                                                            class="align-middle text-right text-sm font-normal px-6 py-4 whitespace-nowrap">
+                                                            <a href="/english/edit/151"
+                                                                class="font-medium text-indigo-500 hover:text-indigo-600 focus:text-indigo-600 active:text-indigo-700 transition duration-300 ease-in-out">Edit</a>
+                                                            <button data-song-number="151"
+                                                                onclick="handleDeleteBtnClick(event)"
+                                                                class="font-medium text-red-500 hover:text-red-600 focus:text-red-600 active:text-red-700 transition duration-300 ease-in-out">Delete</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr class="border">
+                                                        <th scope="row"
+                                                            class="text-sm font-normal px-6 py-4 whitespace-nowrap text-left">
+                                                            <div class="flex flex-row items-center">
+                                                                <div class="ml-4">
+                                                                    <p class="mb-0.5 text-gray-500 font-medium">152</p>
+                                                                    <p class="mb-0.5">
+                                                                        Let us worship the LORD</p>
+                                                                </div>
+                                                            </div>
+                                                        </th>
+                                                        <td
+                                                            class="align-middle text-right text-sm font-normal px-6 py-4 whitespace-nowrap">
+                                                            <a href="/english/edit/152"
+                                                                class="font-medium text-indigo-500 hover:text-indigo-600 focus:text-indigo-600 active:text-indigo-700 transition duration-300 ease-in-out">Edit</a>
+                                                            <button data-song-number="152"
+                                                                onclick="handleDeleteBtnClick(event)"
+                                                                class="font-medium text-red-500 hover:text-red-600 focus:text-red-600 active:text-red-700 transition duration-300 ease-in-out">Delete</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr class="border">
+                                                        <th scope="row"
+                                                            class="text-sm font-normal px-6 py-4 whitespace-nowrap text-left">
+                                                            <div class="flex flex-row items-center">
+                                                                <div class="ml-4">
+                                                                    <p class="mb-0.5 text-gray-500 font-medium">153</p>
+                                                                    <p class="mb-0.5">
+                                                                        Hooray! Let us dance.</p>
+                                                                </div>
+                                                            </div>
+                                                        </th>
+                                                        <td
+                                                            class="align-middle text-right text-sm font-normal px-6 py-4 whitespace-nowrap">
+                                                            <a href="/english/edit/153"
+                                                                class="font-medium text-indigo-500 hover:text-indigo-600 focus:text-indigo-600 active:text-indigo-700 transition duration-300 ease-in-out">Edit</a>
+                                                            <button data-song-number="153"
+                                                                onclick="handleDeleteBtnClick(event)"
+                                                                class="font-medium text-red-500 hover:text-red-600 focus:text-red-600 active:text-red-700 transition duration-300 ease-in-out">Delete</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr class="border">
+                                                        <th scope="row"
+                                                            class="text-sm font-normal px-6 py-4 whitespace-nowrap text-left">
+                                                            <div class="flex flex-row items-center">
+                                                                <div class="ml-4">
+                                                                    <p class="mb-0.5 text-gray-500 font-medium">154</p>
+                                                                    <p class="mb-0.5">
+                                                                        God is Good</p>
+                                                                </div>
+                                                            </div>
+                                                        </th>
+                                                        <td
+                                                            class="align-middle text-right text-sm font-normal px-6 py-4 whitespace-nowrap">
+                                                            <a href="/english/edit/154"
+                                                                class="font-medium text-indigo-500 hover:text-indigo-600 focus:text-indigo-600 active:text-indigo-700 transition duration-300 ease-in-out">Edit</a>
+                                                            <button data-song-number="154"
+                                                                onclick="handleDeleteBtnClick(event)"
+                                                                class="font-medium text-red-500 hover:text-red-600 focus:text-red-600 active:text-red-700 transition duration-300 ease-in-out">Delete</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <div class="relative block text-sm w-fit ml-auto">
+                                                <button onclick="handlePaginationPrevBtnClick(event)" data-page="1"
+                                                    class="inline-flex items-center bg-gray-50 border border-1 py-1 px-3 focus:outline-none hover:bg-gray-100 text-sm">&lt;</button>
+                                                <span class="py-1 px-3">1</span>
+                                                <button onclick="handlePaginationPrevBtnClick(event)" data-page="1"
+                                                    class="inline-flex items-center bg-gray-50 border border-1 py-1 px-3 focus:outline-none hover:bg-gray-100 text-sm">&gt;</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <footer class="text-gray-600">
+            <div class="bg-gray-100">
+                <div class="container mx-auto py-4 px-5 flex flex-wrap flex-col sm:flex-row">
+                    <p class="text-gray-500 text-sm text-center sm:text-left">© 2023 SopherApps —
+                        <a href="https://sopherapps.com" class="text-gray-600 ml-1" target="_blank"
+                            rel="noopener noreferrer">@sopherapps</a>
+                    </p>
+                    <span
+                        class="sm:ml-auto sm:mt-0 mt-2 sm:w-auto w-full sm:text-left text-center text-gray-500 text-sm">
+                        "Come to me, all you who are weary and burdened, and I will give you rest." - Matthew 11:
+                        28</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <div id="delete-confirmation-modal" data-song-number=""
+        class="modal z-10 fixed hidden w-screen h-screen bg-gray-800 bg-opacity-50 justify-center items-center top-0 left-0">
+        <div class="w-4/5 md:w-2/4 xl:w-1/4 h-fit bg-white rounded">
+            <header class="p-3 border-b border-gray-200">
+                <h3>Do you Really wish to Delete this Song?</h3>
+            </header>
+            <div class="p-5">
+                <div class="w-full">
+                    <div class="relative">
+                        <label for="number" class="leading-6 text-sm text-gray-600">Feed in the song number to
+                            confirm</label>
+                        <input id="delete-confirmation-input" type="text" id="number" name="number"
+                            class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-sm outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out">
+
+                        <p id="error-message" class="text-red-700 text-xs leading-2"></p>
+                    </div>
+                </div>
+            </div>
+            <footer class="w-full p-3 flex justify-between">
+                <button onclick="handleModalConfirmBtnClick(event)"
+                    class="w-1/3 text-white bg-indigo-500 border-0 py-1 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm">Confirm</button>
+                <button onclick="handleModalCancelBtnClick(event)"
+                    class="w-1/3 bg-gray-100 border-0 py-1 px-3 focus:outline-none hover:bg-gray-200 rounded text-sm">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <script src="/static/js/index.js"></script>
+</body>
+
+</html>
