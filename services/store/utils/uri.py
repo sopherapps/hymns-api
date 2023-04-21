@@ -24,7 +24,10 @@ def escape_db_uri(uri: str) -> str:
     database = "" if parsed_uri.database is None else f"/{parsed_uri.database}"
     port = "" if parsed_uri.port is None else f":{parsed_uri.port}"
 
-    return f"{parsed_uri.drivername}://{user_details}@{parsed_uri.host}{port}{database}"
+    if user_details:
+        return f"{parsed_uri.drivername}://{user_details}@{parsed_uri.host}{port}{database}"
+
+    return f"{parsed_uri.drivername}://{parsed_uri.host}{port}{database}"
 
 
 def get_pg_async_uri(uri: str) -> str:

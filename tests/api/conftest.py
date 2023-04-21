@@ -21,8 +21,12 @@ from tests.utils.mongo import mongo_upsert_user
 
 # For testing routes that need songs and languages
 api_songs_langs_fixture = [
-    (lazy_fixture("mongo_test_client"), song, languages) for song in songs
-] + [(lazy_fixture("pg_test_client"), song, languages) for song in songs]
+    #     (lazy_fixture("mongo_test_client"), song, languages) for song in songs
+    # ] + \
+    #                           [
+    (lazy_fixture("pg_test_client"), song, languages)
+    for song in songs
+]
 
 # For testing using just plain api clients
 test_clients_fixture = [

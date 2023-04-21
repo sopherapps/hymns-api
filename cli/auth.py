@@ -16,6 +16,8 @@ otp_verification_url: Optional[str] = None
 
 async def initialize(force: bool = False):
     """Initializes the auth service"""
+    settings.initialize()
+
     global hymns_service_conf
     if force or hymns_service_conf is None:
         hymns_service_conf = settings.get_hymns_service_config()

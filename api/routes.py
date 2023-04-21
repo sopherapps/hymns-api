@@ -1,13 +1,18 @@
 """The RESTful API and the admin site
 """
 import gc
-from typing import Optional, List, Any
+from typing import Optional, List
 
 from fastapi import FastAPI, Query, Security, HTTPException, status, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.security.api_key import APIKeyHeader
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
+from fastapi.requests import Request
+from fastapi.templating import Jinja2Templates
 from slowapi.middleware import SlowAPIMiddleware
+
 
 import settings
 from api.models import (
@@ -40,6 +45,7 @@ api_key_header = APIKeyHeader(name="x-api-key")
 hymns_service: Optional[hymns.types.HymnsService] = None
 auth_service: Optional[auth.types.AuthService] = None
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 # app set up
 app.add_middleware(SlowAPIMiddleware)
@@ -50,6 +56,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -84,6 +91,8 @@ async def _get_current_user(token: str = Depends(oauth2_scheme)) -> UserDTO:
 @app.on_event("startup")
 async def start():
     """Initializes the hymns service"""
+    settings.initialize()
+
     hymns_db_uri = settings.get_hymns_db_uri()
     auth_db_uri = settings.get_auth_db_uri()
     config_db_uri = settings.get_config_db_uri()
@@ -134,21 +143,9 @@ async def shutdown():
     gc.collect()
 
 
-@app.post("/register", response_model=Application)
-async def register_app():
-    """Registers a new app to get a new API key.
-
-    It returns the application with the raw key but saves a hashed key in the auth service
-    such that an API key is seen only once
-    """
-    res = await auth.register_app(auth_service)
-    transform = try_to(lambda v: v)
-    return transform(res)
-
-
-@app.post("/login", response_model=LoginResponse)
-async def login(data: OAuth2PasswordRequestForm = Depends()):
-    """Logins in admin users"""
+@app.post("/api/login", response_model=LoginResponse)
+async def api_login(data: OAuth2PasswordRequestForm = Depends()):
+    """API route that logins in admin users"""
     otp_url = app.state.otp_verification_url
     res = await auth.login(
         auth_service,
@@ -161,24 +158,36 @@ async def login(data: OAuth2PasswordRequestForm = Depends()):
     return transform(res)
 
 
-@app.post("/verify-otp", response_model=OTPResponse)
-async def verify_otp(data: OTPRequest, token: str = Depends(oauth2_scheme)):
+@app.post("/api/verify-otp", response_model=OTPResponse)
+async def api_verify_otp(data: OTPRequest, token: str = Depends(oauth2_scheme)):
     """Verifies the one-time password got by email"""
     res = await auth.verify_otp(auth_service, otp=data.otp, unverified_token=token)
     transform = try_to(lambda v: v)
     return transform(res)
 
 
-@app.post("/change-password")
-async def change_password(data: ChangePasswordRequest):
+@app.post("/api/change-password")
+async def api_change_password(data: ChangePasswordRequest):
     """Initializes the password change process"""
     res = await auth.change_password(auth_service, data=data)
     transform = try_to(lambda v: v)
     return transform(res)
 
 
-@app.get("/{language}/{number}", response_model=SongDetail)
-async def get_song_detail(
+@app.post("/api/register", response_model=Application)
+async def api_register_app():
+    """API route that registers a new app to get a new API key.
+
+    It returns the application with the raw key but saves a hashed key in the auth service
+    such that an API key is seen only once
+    """
+    res = await auth.register_app(auth_service)
+    transform = try_to(lambda v: v)
+    return transform(res)
+
+
+@app.get("/api/{language}/{number}", response_model=SongDetail)
+async def api_get_song_detail(
     language: str,
     number: int,
     translation: List[str] = Query(default=()),
@@ -195,8 +204,8 @@ async def get_song_detail(
     return song
 
 
-@app.get("/{language}/find-by-title/{q}", response_model=PaginatedResponse)
-async def query_by_title(
+@app.get("/api/{language}/find-by-title/{q}", response_model=PaginatedResponse)
+async def api_query_by_title(
     language: str,
     q: str,
     skip: int = 0,
@@ -211,8 +220,8 @@ async def query_by_title(
     return transform(res)
 
 
-@app.get("/{language}/find-by-number/{q}", response_model=PaginatedResponse)
-async def query_by_number(
+@app.get("/api/{language}/find-by-number/{q}", response_model=PaginatedResponse)
+async def api_query_by_number(
     language: str,
     q: int,
     skip: int = 0,
@@ -227,16 +236,8 @@ async def query_by_number(
     return transform(res)
 
 
-@app.post("/", response_model=Song)
-async def create_song(song: Song, user: UserDTO = Depends(_get_current_user)):
-    """Creates a new song"""
-    res = await hymns.add_song(hymns_service, song=song)
-    transform = try_to(lambda v: v)
-    return transform(res)
-
-
-@app.put("/{language}/{number}", response_model=Song)
-async def update_song(
+@app.put("/api/{language}/{number}", response_model=Song)
+async def api_update_song(
     language: str,
     number: int,
     song: PartialSong,
@@ -251,14 +252,64 @@ async def update_song(
     return transform(res)
 
 
-@app.delete("/{language}/{number}", response_model=List[Song])
-async def delete_song(
+@app.delete("/api/{language}/{number}", response_model=List[Song])
+async def api_delete_song(
     language: str, number: int, user: UserDTO = Depends(_get_current_user)
 ):
     """Deletes the song whose number is given"""
     res = await hymns.delete_song(hymns_service, number=number, language=language)
     transform = try_to(lambda v: v)
     return transform(res)
+
+
+@app.post("/api", response_model=Song)
+async def api_create_song(song: Song, user: UserDTO = Depends(_get_current_user)):
+    """API route that creates a new song"""
+    res = await hymns.add_song(hymns_service, song=song)
+    transform = try_to(lambda v: v)
+    return transform(res)
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login(request: Request):
+    """HTML template route that logins in admin users"""
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.get("/verify-otp", response_class=HTMLResponse)
+async def verify_otp(request: Request):
+    """HTML template route that verifies the one-time password got by email"""
+    return templates.TemplateResponse("verify-otp.html", {"request": request})
+
+
+@app.get("/change-password", response_class=HTMLResponse)
+async def change_password(request: Request):
+    """HTML template route that initializes the password change process"""
+    return templates.TemplateResponse("change-password.html", {"request": request})
+
+
+@app.get("/create", response_class=HTMLResponse)
+async def create_song(request: Request, user: UserDTO = Depends(_get_current_user)):
+    """Creates a new song"""
+    return templates.TemplateResponse("create.html", {"request": request})
+
+
+@app.get("/edit/{language}/{number}", response_class=HTMLResponse)
+async def update_song(
+    request: Request,
+    language: str,
+    number: int,
+    user: UserDTO = Depends(_get_current_user),
+):
+    """Edits a new song"""
+    song = await _get_song(language=language, number=number)
+    return templates.TemplateResponse("edit.html", {"request": request, "song": song})
+
+
+@app.get("/", response_class=HTMLResponse)
+async def admin_home(request: Request, user: UserDTO = Depends(_get_current_user)):
+    """Admin home"""
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 async def _get_song(language: str, number: int) -> Song:

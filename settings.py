@@ -8,9 +8,15 @@ import fastapi_mail
 from errors import ConfigurationError
 from services.config import ServiceConfig
 
-_default_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db")
+_root_path = os.path.dirname(os.path.abspath(__file__))
+_default_db_path = os.path.join(_root_path, "db")
+_default_env_file = os.path.join(_root_path, ".env")
 
-dotenv.load_dotenv()
+
+def initialize():
+    """Initializes the settings basing on app settings"""
+    if os.getenv("APP_SETTINGS", "production") != "testing":
+        dotenv.load_dotenv(_default_env_file)
 
 
 def get_db_uri() -> str:

@@ -36,6 +36,7 @@ def _prepare_cli_env(db_path: str):
     Args:
         db_path: the path to the database
     """
+    os.environ["APP_SETTINGS"] = "testing"
     os.environ["DB_PATH"] = db_path
     os.environ["API_SECRET"] = Fernet.generate_key().decode()
     os.environ["OTP_VERIFICATION_URL"] = app.url_path_for("verify_otp")

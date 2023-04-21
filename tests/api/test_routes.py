@@ -28,7 +28,7 @@ async def test_create_song(client: TestClient, song: Song, langs: List[str]):
             new_song = Song(**{**song.dict(), "language": lang})
             payload = new_song.dict()
 
-            response = client.post("/", json=payload, headers=headers)
+            response = client.post("/api", json=payload, headers=headers)
             assert response.status_code == 200
             assert response.json() == payload
 
@@ -52,7 +52,7 @@ async def test_get_song_detail(client: TestClient):
             for song in songs:
                 new_song = Song(**{**song.dict(), "language": lang})
                 payload = new_song.dict()
-                response = client.post("/", json=payload, headers=headers)
+                response = client.post("/api", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for song in songs:
@@ -63,7 +63,7 @@ async def test_get_song_detail(client: TestClient):
                 },
             )
             response = client.get(
-                f"/{languages[0]}/{song.number}",
+                f"/api/{languages[0]}/{song.number}",
                 params={"translation": languages[1:]},
                 headers=headers,
             )
@@ -101,11 +101,11 @@ async def test_update_song(client: TestClient, song: Song, langs: List[str]):
                 payload = new_song.dict()
                 expected = {**payload, **new_data}
 
-                response = client.post("/", json=payload, headers=headers)
+                response = client.post("/api", json=payload, headers=headers)
                 assert response.status_code == 200
 
                 response = client.put(
-                    f"/{lang}/{song.number}", json=new_data, headers=headers
+                    f"/api/{lang}/{song.number}", json=new_data, headers=headers
                 )
                 assert response.status_code == 200
                 assert response.json() == expected
@@ -130,17 +130,17 @@ async def test_delete_song(client: TestClient):
             for song in songs:
                 new_song = Song(**{**song.dict(), "language": lang})
                 payload = new_song.dict()
-                response = client.post("/", json=payload, headers=headers)
+                response = client.post("/api", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for lang in languages:
             for song in songs:
                 expected = [Song(**{**song.dict(), "language": lang}).dict()]
-                response = client.delete(f"/{lang}/{song.number}", headers=headers)
+                response = client.delete(f"/api/{lang}/{song.number}", headers=headers)
                 assert response.status_code == 200
                 assert response.json() == expected
 
-                response = client.get(f"/{lang}/{song.number}", headers=headers)
+                response = client.get(f"/api/{lang}/{song.number}", headers=headers)
                 assert response.status_code == 404
 
 
@@ -186,7 +186,7 @@ async def test_query_by_title(client: TestClient):
         for lang in languages:
             for num, title in nums_and_titles:
                 payload = dict(**song_data, title=title, number=num, language=lang)
-                response = client.post("/", json=payload, headers=headers)
+                response = client.post("/api", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for lang in languages:
@@ -196,7 +196,7 @@ async def test_query_by_title(client: TestClient):
                     for num, title in expected_nums_and_titles
                 ]
                 response = client.get(
-                    f"/{lang}/find-by-title/{q}",
+                    f"/api/{lang}/find-by-title/{q}",
                     params=dict(skip=skip, limit=limit),
                     headers=headers,
                 )
@@ -244,7 +244,7 @@ async def test_query_by_number(client: TestClient):
         for lang in languages:
             for num, title in nums_and_titles:
                 payload = dict(**song_data, title=title, number=num, language=lang)
-                response = client.post("/", json=payload, headers=headers)
+                response = client.post("/api", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for lang in languages:
@@ -254,7 +254,7 @@ async def test_query_by_number(client: TestClient):
                     for num, title in expected_nums_and_titles
                 ]
                 response = client.get(
-                    f"/{lang}/find-by-number/{q}",
+                    f"/api/{lang}/find-by-number/{q}",
                     params=dict(skip=skip, limit=limit),
                     headers=headers,
                 )
@@ -270,9 +270,9 @@ async def test_query_by_number(client: TestClient):
 async def test_api_key(client: TestClient):
     """Some routes expect an API key in the headers"""
     routes = [
-        ("GET", "/english/find-by-number/1", {}, dict(skip=0, limit=0)),
-        ("GET", "/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
-        ("GET", "/english/1", {}, {}),
+        ("GET", "/api/english/find-by-number/1", {}, dict(skip=0, limit=0)),
+        ("GET", "/api/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
+        ("GET", "/api/english/1", {}, {}),
     ]
     with client:
         api_key = _get_api_key(client)
@@ -285,7 +285,7 @@ async def test_api_key(client: TestClient):
 
         for song in songs:
             payload = song.dict()
-            response = client.post("/", json=payload, headers=headers)
+            response = client.post("/api", json=payload, headers=headers)
             assert response.status_code == 200
 
         for method, route, body, params in routes:
@@ -316,9 +316,9 @@ async def test_api_key(client: TestClient):
 async def test_oauth2_token(client: TestClient):
     """Some routes expect an oauth2 JWT token in the headers"""
     routes = [
-        ("POST", "/", songs[0].dict(), {}),
-        ("PUT", "/english/1", songs[0].dict(), {}),
-        ("DELETE", "/english/1", songs[0].dict(), {}),
+        ("POST", "/api", songs[0].dict(), {}),
+        ("PUT", "/api/english/1", songs[0].dict(), {}),
+        ("DELETE", "/api/english/1", songs[0].dict(), {}),
     ]
     with client:
         jwt_token = _get_oauth2_token(client, test_user)
@@ -328,7 +328,7 @@ async def test_oauth2_token(client: TestClient):
 
         for song in songs:
             payload = song.dict()
-            response = client.post("/", json=payload, headers=headers)
+            response = client.post("/api", json=payload, headers=headers)
             assert response.status_code == 200
 
         for method, route, body, params in routes:
@@ -364,12 +364,12 @@ async def test_rate_limit(client_and_rate):
     """All routes are protected by a rate limiter, whose rate is set using an environment variable"""
     client, max_reqs_per_sec = client_and_rate
     routes = [
-        ("GET", "/english/find-by-number/1", {}, dict(skip=0, limit=0)),
-        ("GET", "/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
-        ("GET", "/english/1", {}, {}),
-        ("POST", "/", songs[0].dict(), {}),
-        ("PUT", "/english/1", songs[0].dict(), {}),
-        ("DELETE", "/english/1", songs[0].dict(), {}),
+        ("GET", "/api/english/find-by-number/1", {}, dict(skip=0, limit=0)),
+        ("GET", "/api/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
+        ("GET", "/api/english/1", {}, {}),
+        ("POST", "/api", songs[0].dict(), {}),
+        ("PUT", "/api/english/1", songs[0].dict(), {}),
+        ("DELETE", "/api/english/1", songs[0].dict(), {}),
     ]
 
     with client:
@@ -379,7 +379,7 @@ async def test_rate_limit(client_and_rate):
         for song in songs:
             payload = song.dict()
             time.sleep(1)
-            response = client.post("/", json=payload, headers=headers)
+            response = client.post("/api", json=payload, headers=headers)
             assert response.status_code == 200
 
         for method, route, body, params in routes:
@@ -415,7 +415,7 @@ def _assert_song_has_content(
     headers: Dict[str, Any] = {},
 ):
     """Asserts that the song for the given language and number has the given content"""
-    response = client.get(f"/{language}/{number}", headers=headers)
+    response = client.get(f"/api/{language}/{number}", headers=headers)
     assert response.status_code == 200
     assert response.json() == dict(number=number, translations={language: content})
 
@@ -430,7 +430,7 @@ def _get_auth_headers(client, user: auth.models.UserDTO):
 
 def _get_api_key(client: TestClient) -> str:
     """Gets the API key to use to access the API."""
-    response = client.post(f"/register", json={})
+    response = client.post(f"/api/register", json={})
     assert response.status_code == 200
 
     data = response.json()
@@ -442,7 +442,7 @@ def _get_oauth2_token(client: TestClient, user: auth.models.UserDTO) -> str:
     with client.app.state.auth_service.mail.record_messages() as outbox:
         # login with user
         login_request = {"username": user.username, "password": user.password}
-        response = client.post("/login", data=login_request)
+        response = client.post("/api/login", data=login_request)
         assert response.status_code == 200
         unverified_token = response.json()["access_token"]
 
@@ -458,7 +458,7 @@ def _get_oauth2_token(client: TestClient, user: auth.models.UserDTO) -> str:
     # verify OTP
     otp_request = {"otp": otp}
     headers = {"Authorization": f"Bearer {unverified_token}"}
-    response = client.post("/verify-otp", json=otp_request, headers=headers)
+    response = client.post("/api/verify-otp", json=otp_request, headers=headers)
     assert response.status_code == 200
 
     # return JWT token
