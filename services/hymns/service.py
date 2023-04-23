@@ -20,18 +20,21 @@ from services.hymns.models import Song, PaginatedResponse
 from .types import HymnsService
 
 
-async def initialize(root_path: bytes | str) -> "HymnsService":
+async def initialize(
+    config_db_uri: bytes | str, service_db_uri: bytes | str
+) -> "HymnsService":
     """Initializes the hymns service given the configuration.
 
     Args:
-        root_path: the path to the stores for the hymns service
+        config_db_uri: the path to the store for the configuration service
+        service_db_uri: the path to the stores for the hymns service
 
     Returns:
         the HymnsService whose configuration is at the store_uri
     """
-    conf = await services.config.get_service_config(root_path)
-    stores = initialize_many_language_stores(root_path, conf=conf)
-    return HymnsService(root_path=root_path, stores=stores)
+    conf = await services.config.get_service_config(config_db_uri)
+    stores = initialize_many_language_stores(service_db_uri, conf=conf)
+    return HymnsService(root_path=service_db_uri, stores=stores)
 
 
 async def add_song(service: "HymnsService", song: Song) -> ml.Result:

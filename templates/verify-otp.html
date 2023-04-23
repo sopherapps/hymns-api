@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hymns Admin</title>
-    <link href="/static/css/output.css" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/output.css') }}" rel="stylesheet">
 </head>
 
 <body>
@@ -28,23 +28,26 @@
             </div>
         </header>
         <section class="flex text-gray-600 relative flex-1">
-            <div class="w-4/5 md:w-2/4 xl:w-1/4 flex justify-center items-center mx-auto">
+            <form class="w-4/5 md:w-2/4 xl:w-1/4 flex justify-center items-center mx-auto" method="post" action="url_for('api_verify_otp')">
                 <div class="flex flex-wrap px-5 py-5">
                     <div class="w-full border-b border-gray-200 mb-5">
                         <h2 class="py-3">Confirm OTP</h2>
+                        <p>A one-time password has been sent to your email.</p>
                     </div>
                     <div class="w-full">
                         <div class="relative">
-                            <label for="otp" class="leading-5 text-xs text-gray-600">Username</label>
+                            <label for="otp" class="leading-5 text-xs text-gray-600">OTP</label>
                             <input type="text" id="otp" name="otp"
                                 class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out">
                         </div>
                     </div>
 
-                    <button
+                    <input type="hidden" name="csrftoken" value="{{ request.state.csrftoken }}" >
+
+                    <button type="submit"
                         class="w-full text-white bg-indigo-500 border-0 py-1 px-3 my-5 focus:outline-none hover:bg-indigo-600 rounded text-sm">Login</button>
                 </div>
-            </div>
+            </form>
         </section>
         <footer class="text-gray-600">
             <div class="bg-gray-100">

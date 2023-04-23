@@ -21,7 +21,9 @@ from .conftest import (
 @pytest.mark.parametrize("service_db_uri", service_db_path_fixture)
 async def test_initialize(service_db_uri):
     """initialize initializes the hymns store and everything required"""
-    hymns_service = await hymns.initialize(service_db_uri)
+    hymns_service = await hymns.initialize(
+        config_db_uri=service_db_uri, service_db_uri=service_db_uri
+    )
     assert isinstance(hymns_service, hymns.types.HymnsService)
 
 

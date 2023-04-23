@@ -28,7 +28,8 @@ async def initialize(force: bool = False):
     global auth_service
     if force or auth_service is None:
         auth_service = await auth.initialize(
-            uri=settings.get_auth_db_uri(),
+            config_db_uri=settings.get_config_db_uri(),
+            service_db_uri=settings.get_auth_db_uri(),
             key_size=settings.get_api_key_length(),
             api_secret=settings.get_api_secret(),
             jwt_ttl=settings.get_jwt_ttl_in_sec(),

@@ -22,13 +22,13 @@ class UserInDb(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str
-    token_type: str = "bearer"
+    token_type: str = "Bearer"
     message: str
 
 
 class OTPResponse(BaseModel):
     access_token: str
-    token_type: str = "bearer"
+    token_type: str = "Bearer"
 
 
 class ChangePasswordRequest(BaseModel):

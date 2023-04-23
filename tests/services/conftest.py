@@ -73,7 +73,9 @@ async def mongo_service_db_path(test_mongo_path):
 @aio_pytest_fixture
 async def mongo_hymns_service(mongo_service_db_path):
     """the hymns service for use during tests when running on mongo db"""
-    service = await hymns.initialize(mongo_service_db_path)
+    service = await hymns.initialize(
+        config_db_uri=mongo_service_db_path, service_db_uri=mongo_service_db_path
+    )
     yield service
 
 
@@ -87,5 +89,7 @@ async def pg_service_db_path(test_pg_path):
 @aio_pytest_fixture
 async def pg_hymns_service(pg_service_db_path):
     """the hymns service for use during tests  when running on postgres"""
-    service = await hymns.initialize(pg_service_db_path)
+    service = await hymns.initialize(
+        config_db_uri=pg_service_db_path, service_db_uri=pg_service_db_path
+    )
     yield service

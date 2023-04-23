@@ -33,7 +33,8 @@ _ALGORITHM = "HS256"
 
 
 async def initialize(
-    uri: Union[bytes, str],
+    config_db_uri: Union[bytes, str],
+    service_db_uri: Union[bytes, str],
     key_size: int,
     api_secret: str,
     jwt_ttl: float,
@@ -44,7 +45,8 @@ async def initialize(
     """Initializes the auth service given the root path to the configuration store.
 
     Args:
-        uri: the path to the stores for the hymns service
+        config_db_uri: the path to the store for the configuration service
+        service_db_uri: the path to the stores for the hymns service
         key_size: the size of the API key to be used
         api_secret: the API secret for handling cryptographic things
         jwt_ttl: time-to-live for the JWT in seconds
@@ -55,9 +57,9 @@ async def initialize(
     Returns:
         the HymnsService whose configuration is at the store_uri
     """
-    service_conf = await get_service_config(uri)
-    auth_store = get_auth_store(service_conf=service_conf, uri=uri)
-    users_store = get_users_store(service_conf=service_conf, uri=uri)
+    service_conf = await get_service_config(config_db_uri)
+    auth_store = get_auth_store(service_conf=service_conf, uri=service_db_uri)
+    users_store = get_users_store(service_conf=service_conf, uri=service_db_uri)
     fernet = Fernet(api_secret)
     return AuthService(
         auth_store=auth_store,

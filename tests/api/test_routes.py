@@ -3,6 +3,8 @@ from typing import List, Dict, Any
 
 import pytest
 from fastapi.testclient import TestClient
+
+import api.routes
 from api.models import Song
 from services import auth
 from .conftest import (
@@ -383,7 +385,7 @@ async def test_rate_limit(client_and_rate):
             assert response.status_code == 200
 
         for method, route, body, params in routes:
-            client.app.state.limiter.reset()
+            api.routes.app.state.limiter.reset()
 
             for _ in range(max_reqs_per_sec):
                 response = client.request(
@@ -440,11 +442,19 @@ def _get_api_key(client: TestClient) -> str:
 def _get_oauth2_token(client: TestClient, user: auth.models.UserDTO) -> str:
     """Gets the Oauth2 token to use to access the admin part of the API."""
     with client.app.state.auth_service.mail.record_messages() as outbox:
+        # visit the login form page to get csrf token
+        response = client.get("/admin/login")
+        csrf_token = response.cookies.get("csrftoken")
+
         # login with user
-        login_request = {"username": user.username, "password": user.password}
-        response = client.post("/api/login", data=login_request)
-        assert response.status_code == 200
-        unverified_token = response.json()["access_token"]
+        login_request = {
+            "username": user.username,
+            "password": user.password,
+            "csrftoken": csrf_token,
+        }
+        response = client.post("/admin/login", data=login_request)
+        assert response.status_code == 302
+        unverified_auth = response.cookies.get("Authorization")
 
         # read email to get otp
         assert len(outbox) >= 1
@@ -457,9 +467,9 @@ def _get_oauth2_token(client: TestClient, user: auth.models.UserDTO) -> str:
 
     # verify OTP
     otp_request = {"otp": otp}
-    headers = {"Authorization": f"Bearer {unverified_token}"}
-    response = client.post("/api/verify-otp", json=otp_request, headers=headers)
-    assert response.status_code == 200
+    headers = {"Authorization": unverified_auth, "csrftoken": csrf_token}
+    response = client.post("/admin/verify-otp", data=otp_request, headers=headers)
+    assert response.status_code == 302
 
     # return JWT token
     return response.json()["access_token"]
