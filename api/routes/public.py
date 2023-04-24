@@ -1,20 +1,17 @@
 """Routes that are public"""
-import gc
 from typing import List, Union
 
 from fastapi import Query, Security, FastAPI
 from fastapi.requests import Request
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 from starlette.middleware.cors import CORSMiddleware
 
-import settings
-from api.dependencies import get_api_key_or_current_user
+from api.dependencies import get_api_key
 from api.models import SongDetail
 from api.utils import extract_result
-from services import auth, hymns, config
+from services import auth, hymns
 from services.auth.models import Application, UserDTO
 from services.hymns.models import PaginatedResponse
 
@@ -25,6 +22,8 @@ public_api.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+public_api.add_middleware(SlowAPIMiddleware)
+public_api.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @public_api.post("/register", response_model=Application)
@@ -44,7 +43,7 @@ async def get_song_detail(
     language: str,
     number: int,
     translation: List[str] = Query(default=()),
-    api_key_or_user: Union[str, UserDTO] = Security(get_api_key_or_current_user),
+    api_key_or_user: Union[str, UserDTO] = Security(get_api_key),
 ):
     """Displays the details of the song whose number is given"""
     languages = [language, *translation]
@@ -52,7 +51,7 @@ async def get_song_detail(
 
     for lang in languages:
         res = await hymns.get_song_by_number(
-            request.app.state.hymns_service, number=number, language=language
+            request.app.state.hymns_service, number=number, language=lang
         )
         _translation = extract_result(res)
         song.translations[lang] = _translation
@@ -67,7 +66,7 @@ async def query_by_title(
     q: str,
     skip: int = 0,
     limit: int = 0,
-    api_key_or_user: Union[str, UserDTO] = Security(get_api_key_or_current_user),
+    api_key_or_user: Union[str, UserDTO] = Security(get_api_key),
 ):
     """Returns list of songs whose titles match the search term `q`"""
     res = await hymns.query_songs_by_title(
@@ -83,7 +82,7 @@ async def query_by_number(
     q: int,
     skip: int = 0,
     limit: int = 0,
-    api_key_or_user: Union[str, UserDTO] = Security(get_api_key_or_current_user),
+    api_key_or_user: Union[str, UserDTO] = Security(get_api_key),
 ):
     """Returns list of songs whose numbers match the search term `q`"""
     res = await hymns.query_songs_by_number(

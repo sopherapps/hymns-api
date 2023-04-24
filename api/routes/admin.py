@@ -1,5 +1,4 @@
 """Routes for the admin site"""
-import http.cookies
 from typing import List
 
 from fastapi import Depends, Form, FastAPI, status
@@ -8,7 +7,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
-from starlette.datastructures import MutableHeaders
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 import settings
 from api.dependencies import get_current_user, oauth2_scheme
@@ -20,6 +21,8 @@ from services.hymns.models import Song
 
 admin_site = FastAPI(openapi_prefix="/admin")
 admin_site.add_middleware(CSRFMiddleware)
+admin_site.add_middleware(SlowAPIMiddleware)
+admin_site.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 admin_site.mount(
     "/static", StaticFiles(directory=settings.get_static_folder()), name="static"
 )
@@ -67,7 +70,8 @@ async def create_song(
     response = RedirectResponse(
         url=request.url_for(
             "get_edit_song", language=new_song.language, number=new_song.number
-        )
+        ),
+        status_code=status.HTTP_302_FOUND,
     )
     return response
 
@@ -85,14 +89,13 @@ async def login(request: Request, data: OAuth2PasswordRequestForm = Depends()):
     login_result: LoginResponse = extract_result(res)
     # setting the status to 302 ensures the POST is transformed to a GET in the redirect
     # https://stackoverflow.com/questions/62119138/how-to-do-a-post-redirect-get-prg-in-fastapi
-    # FIXME: However this makes it impossible to set the cookie
-    # FIXME: The status code is also not working as expected. Could it be due to overriding the BaseHTTPMiddleware?
     response = RedirectResponse(url=verify_otp_url, status_code=status.HTTP_302_FOUND)
     response.set_cookie(
         "Authorization",
         value=f"{login_result.token_type} {login_result.access_token}",
         domain=verify_otp_url.hostname,
         httponly=True,
+        path="/",
         max_age=_cookie_ttl,
         expires=_cookie_ttl,
         secure=verify_otp_url.is_secure,
@@ -119,6 +122,7 @@ async def verify_otp(
         value=f"{otp_result.token_type} {otp_result.access_token}",
         domain=admin_home_url.hostname,
         httponly=True,
+        path="/",
         max_age=_cookie_ttl,
         expires=_cookie_ttl,
         secure=admin_home_url.is_secure,

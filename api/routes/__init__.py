@@ -1,28 +1,20 @@
 """The RESTful API and the admin site
 """
 import gc
-from typing import Optional
 
 from fastapi import FastAPI
-from fastapi.security import APIKeyHeader
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 
 import settings
 from services import hymns, auth, config
 from services.store import Store
-from slowapi.middleware import SlowAPIMiddleware
 
 from .admin import admin_site
 from .public import public_api
 
 
-# hymns_service: Optional[hymns.types.HymnsService] = None
-# auth_service: Optional[auth.types.AuthService] = None
 app = FastAPI()
-app.add_middleware(SlowAPIMiddleware)
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # app set up
 app.mount("/api", public_api)
@@ -55,6 +47,7 @@ async def start():
         config_db_uri=config_db_uri, service_db_uri=hymns_db_uri
     )
     app.state.hymns_service = hymns_service
+    admin_site.state.hymns_service = hymns_service
     public_api.state.hymns_service = hymns_service
 
     # auth service

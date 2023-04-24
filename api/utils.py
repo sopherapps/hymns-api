@@ -1,17 +1,17 @@
-from typing import Any, Callable, TypeVar, Optional, List, Tuple
+from typing import Any, TypeVar, Optional, Tuple, List
 
 import funml as ml
 from fastapi import HTTPException
 import uuid
 
 from fastapi.openapi.models import OAuthFlows
-from fastapi.security import OAuth2
+from fastapi.security import OAuth2, OAuth2PasswordBearer
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette import status
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import PlainTextResponse, Response
-from starlette.status import HTTP_403_FORBIDDEN
+from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
 from starlette.types import ASGIApp, Message
 
 import services
@@ -121,7 +121,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         self._csrf_token_expiry = csrf_token_expiry
         self._excluded_paths = {k: True for k in excluded_paths}
 
-    async def set_body(self, request):
+    @staticmethod
+    async def set_body(request):
         """Read the body without consuming it
         https://github.com/encode/starlette/issues/495
         """
@@ -135,9 +136,6 @@ class CSRFMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        if getattr(request.state, "csrftoken_checked", False):
-            return await call_next(request)
-
         request.state.csrftoken = (
             ""  # Always available even if we don't get it from cookie.
         )
@@ -177,7 +175,6 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         # 🟢 All good. Pass csrftoken up to controllers, templates.
         request.state.csrftoken = token_from_cookie
-        request.state.csrftoken_checked = True
 
         # ⏰ Wait for response to happen.
         response = await call_next(request)
@@ -211,35 +208,33 @@ class OAuth2PasswordBearerCookie(OAuth2):
         flows = OAuthFlows(password={"tokenUrl": tokenUrl, "scopes": scopes})
         super().__init__(flows=flows, scheme_name=scheme_name, auto_error=auto_error)
 
-    async def __call__(self, request: Request) -> Optional[str]:
-        header_authorization: str = request.headers.get("Authorization")
-        cookie_authorization: str = request.cookies.get("Authorization")
+    async def get_multiple_tokens(self, request: Request) -> Optional[List[str]]:
+        """Retrieves the tokens from the header, cookie etc as a list"""
+        tokens = []
+        possible_locations = ["headers", "cookies"]
 
-        header_scheme, header_param = get_authorization_scheme_param(
-            header_authorization
-        )
-        cookie_scheme, cookie_param = get_authorization_scheme_param(
-            cookie_authorization
-        )
+        for location in possible_locations:
+            auth = getattr(request, location).get("Authorization")
+            if auth:
+                scheme, param = get_authorization_scheme_param(auth)
+                if scheme.lower() == "bearer":
+                    tokens.append(param)
 
-        if header_scheme.lower() == "bearer":
-            authorization = True
-            scheme = header_scheme
-            param = header_param
-
-        elif cookie_scheme.lower() == "bearer":
-            authorization = True
-            scheme = cookie_scheme
-            param = cookie_param
-
-        else:
-            authorization = False
-
-        if not authorization or scheme.lower() != "bearer":
+        if len(tokens) < 1:
             if self.auto_error:
                 raise HTTPException(
-                    status_code=HTTP_403_FORBIDDEN, detail="Not authenticated"
+                    status_code=HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                    headers={"WWW-Authenticate": "Bearer"},
                 )
             else:
                 return None
-        return param
+
+        return tokens
+
+    async def __call__(self, request: Request) -> Optional[str]:
+        tokens = await self.get_multiple_tokens(request)
+        if tokens:
+            return tokens[0]
+
+        return None

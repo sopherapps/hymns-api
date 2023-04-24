@@ -19,14 +19,12 @@ from tests.utils.shared import (
 )
 from tests.utils.mongo import mongo_upsert_user
 
+base_url = "http://example.com"
+
 # For testing routes that need songs and languages
 api_songs_langs_fixture = [
-    #     (lazy_fixture("mongo_test_client"), song, languages) for song in songs
-    # ] + \
-    #                           [
-    (lazy_fixture("pg_test_client"), song, languages)
-    for song in songs
-]
+    (lazy_fixture("mongo_test_client"), song, languages) for song in songs
+] + [(lazy_fixture("pg_test_client"), song, languages) for song in songs]
 
 # For testing using just plain api clients
 test_clients_fixture = [
@@ -54,7 +52,7 @@ async def mongo_test_client(test_mongo_path):
     """the http test client for testing the API part of the project when running on mongodb"""
     api_secret = _prepare_api_env(test_mongo_path)
     mongo_upsert_user(test_mongo_path, fernet=Fernet(api_secret), user=test_user)
-    yield TestClient(app)
+    yield TestClient(app, base_url=base_url)
 
 
 @aio_pytest_fixture(params=rate_limits_per_second)
@@ -64,7 +62,7 @@ async def mongo_test_client_and_rate_limit(test_mongo_path, request):
     api_secret = _prepare_api_env(test_mongo_path, rate_limit)
     mongo_upsert_user(test_mongo_path, fernet=Fernet(api_secret), user=test_user)
 
-    yield TestClient(app), rate_limit
+    yield TestClient(app, base_url=base_url), rate_limit
     app.state.limiter.reset()
 
 
@@ -76,7 +74,7 @@ async def pg_test_client(test_pg_path):
     await create_pg_user_table(test_pg_path)
     await pg_upsert_user(test_pg_path, fernet=Fernet(api_secret), user=test_user)
 
-    yield TestClient(app)
+    yield TestClient(app, base_url=base_url)
 
 
 @aio_pytest_fixture(params=rate_limits_per_second)
@@ -88,7 +86,7 @@ async def pg_test_client_and_rate_limit(test_pg_path, request):
     await create_pg_user_table(test_pg_path)
     await pg_upsert_user(test_pg_path, fernet=Fernet(api_secret), user=test_user)
 
-    yield TestClient(app), rate_limit
+    yield TestClient(app, base_url=base_url), rate_limit
     app.state.limiter.reset()
 
 

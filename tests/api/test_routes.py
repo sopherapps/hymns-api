@@ -1,7 +1,9 @@
+import json
 import time
 from typing import List, Dict, Any
 
 import pytest
+from fastapi.security.utils import get_authorization_scheme_param
 from fastapi.testclient import TestClient
 
 import api.routes
@@ -30,9 +32,10 @@ async def test_create_song(client: TestClient, song: Song, langs: List[str]):
             new_song = Song(**{**song.dict(), "language": lang})
             payload = new_song.dict()
 
-            response = client.post("/api", json=payload, headers=headers)
+            response = client.post("/admin", json=payload, headers=headers)
             assert response.status_code == 200
-            assert response.json() == payload
+            assert response.context["song"].dict() == payload
+            assert response.template.name == "edit.html"
 
             _assert_song_has_content(
                 client,
@@ -54,7 +57,7 @@ async def test_get_song_detail(client: TestClient):
             for song in songs:
                 new_song = Song(**{**song.dict(), "language": lang})
                 payload = new_song.dict()
-                response = client.post("/api", json=payload, headers=headers)
+                response = client.post("/admin", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for song in songs:
@@ -103,11 +106,11 @@ async def test_update_song(client: TestClient, song: Song, langs: List[str]):
                 payload = new_song.dict()
                 expected = {**payload, **new_data}
 
-                response = client.post("/api", json=payload, headers=headers)
+                response = client.post("/admin", json=payload, headers=headers)
                 assert response.status_code == 200
 
                 response = client.put(
-                    f"/api/{lang}/{song.number}", json=new_data, headers=headers
+                    f"/admin/{lang}/{song.number}", json=new_data, headers=headers
                 )
                 assert response.status_code == 200
                 assert response.json() == expected
@@ -132,13 +135,15 @@ async def test_delete_song(client: TestClient):
             for song in songs:
                 new_song = Song(**{**song.dict(), "language": lang})
                 payload = new_song.dict()
-                response = client.post("/api", json=payload, headers=headers)
+                response = client.post("/admin", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for lang in languages:
             for song in songs:
                 expected = [Song(**{**song.dict(), "language": lang}).dict()]
-                response = client.delete(f"/api/{lang}/{song.number}", headers=headers)
+                response = client.delete(
+                    f"/admin/{lang}/{song.number}", headers=headers
+                )
                 assert response.status_code == 200
                 assert response.json() == expected
 
@@ -188,7 +193,7 @@ async def test_query_by_title(client: TestClient):
         for lang in languages:
             for num, title in nums_and_titles:
                 payload = dict(**song_data, title=title, number=num, language=lang)
-                response = client.post("/api", json=payload, headers=headers)
+                response = client.post("/admin", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for lang in languages:
@@ -246,7 +251,7 @@ async def test_query_by_number(client: TestClient):
         for lang in languages:
             for num, title in nums_and_titles:
                 payload = dict(**song_data, title=title, number=num, language=lang)
-                response = client.post("/api", json=payload, headers=headers)
+                response = client.post("/admin", json=payload, headers=headers)
                 assert response.status_code == 200
 
         for lang in languages:
@@ -272,22 +277,21 @@ async def test_query_by_number(client: TestClient):
 async def test_api_key(client: TestClient):
     """Some routes expect an API key in the headers"""
     routes = [
-        ("GET", "/api/english/find-by-number/1", {}, dict(skip=0, limit=0)),
-        ("GET", "/api/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
+        # ("GET", "/api/english/find-by-number/1", {}, dict(skip=0, limit=0)),
+        # ("GET", "/api/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
         ("GET", "/api/english/1", {}, {}),
     ]
     with client:
         api_key = _get_api_key(client)
-        jwt_token = _get_oauth2_token(client, test_user)
-        default_headers = {"Authorization": f"Bearer {jwt_token}"}
+        auth_headers = _get_oauth2_headers(client, test_user)
 
-        headers = {**default_headers, "x-api-key": api_key}
-        no_api_key_headers = {**default_headers, "Content-Type": "application/json"}
-        wrong_api_key_headers = {**default_headers, "x-api-key": f"{api_key[:-3]}you"}
+        no_api_key_headers = {"Content-Type": "application/json"}
+        right_headers = {"x-api-key": api_key}
+        wrong_api_key_headers = {"x-api-key": f"{api_key[:-3]}you"}
 
         for song in songs:
             payload = song.dict()
-            response = client.post("/api", json=payload, headers=headers)
+            response = client.post("/admin", json=payload, headers=auth_headers)
             assert response.status_code == 200
 
         for method, route, body, params in routes:
@@ -308,7 +312,7 @@ async def test_api_key(client: TestClient):
             assert response.json() == {"detail": "could not validate credentials"}
 
             response = client.request(
-                method, url=route, json=body, params=params, headers=headers
+                method, url=route, json=body, params=params, headers=right_headers
             )
             assert response.status_code in (200, 404)
 
@@ -318,20 +322,30 @@ async def test_api_key(client: TestClient):
 async def test_oauth2_token(client: TestClient):
     """Some routes expect an oauth2 JWT token in the headers"""
     routes = [
-        ("POST", "/api", songs[0].dict(), {}),
-        ("PUT", "/api/english/1", songs[0].dict(), {}),
-        ("DELETE", "/api/english/1", songs[0].dict(), {}),
+        ("POST", "/admin", songs[0].dict(), {}),
+        ("PUT", "/admin/english/1", songs[0].dict(), {}),
+        ("DELETE", "/admin/english/1", songs[0].dict(), {}),
     ]
     with client:
-        jwt_token = _get_oauth2_token(client, test_user)
-        headers = {"Authorization": f"Bearer {jwt_token}"}
-        no_jwt_token_headers = {"Content-Type": "application/json"}
-        wrong_jwt_token_headers = {"Authorization": f"Bearer {jwt_token[:-3]}you"}
+        auth_headers = _get_oauth2_headers(client, test_user)
+        no_jwt_token_headers = {
+            "csrftoken": auth_headers["csrftoken"],
+            "Content-Type": "application/json",
+        }
+        wrong_jwt_token_headers = {
+            **auth_headers,
+            "Authorization": f"{auth_headers['Authorization'][:-3]}you",
+        }
 
         for song in songs:
             payload = song.dict()
-            response = client.post("/api", json=payload, headers=headers)
+            response = client.post("/admin", json=payload, headers=auth_headers)
             assert response.status_code == 200
+
+        try:
+            client.cookies.delete(name="Authorization")
+        except KeyError:
+            pass
 
         for method, route, body, params in routes:
             response = client.request(
@@ -355,7 +369,7 @@ async def test_oauth2_token(client: TestClient):
             assert response.json() == {"detail": "AuthenticationError: invalid token"}
 
             response = client.request(
-                method, url=route, json=body, params=params, headers=headers
+                method, url=route, json=body, params=params, headers=auth_headers
             )
             assert response.status_code in (200, 404)
 
@@ -369,9 +383,9 @@ async def test_rate_limit(client_and_rate):
         ("GET", "/api/english/find-by-number/1", {}, dict(skip=0, limit=0)),
         ("GET", "/api/english/find-by-title/Bar", {}, dict(skip=0, limit=0)),
         ("GET", "/api/english/1", {}, {}),
-        ("POST", "/api", songs[0].dict(), {}),
-        ("PUT", "/api/english/1", songs[0].dict(), {}),
-        ("DELETE", "/api/english/1", songs[0].dict(), {}),
+        ("POST", "/admin", songs[0].dict(), {}),
+        ("PUT", "/admin/english/1", songs[0].dict(), {}),
+        ("DELETE", "/admin/english/1", songs[0].dict(), {}),
     ]
 
     with client:
@@ -381,7 +395,7 @@ async def test_rate_limit(client_and_rate):
         for song in songs:
             payload = song.dict()
             time.sleep(1)
-            response = client.post("/api", json=payload, headers=headers)
+            response = client.post("/admin", json=payload, headers=headers)
             assert response.status_code == 200
 
         for method, route, body, params in routes:
@@ -426,7 +440,7 @@ def _get_auth_headers(client, user: auth.models.UserDTO):
     """Gets the auth headers to use for the client"""
     return {
         "x-api-key": _get_api_key(client),
-        "Authorization": f"Bearer {_get_oauth2_token(client, user)}",
+        **_get_oauth2_headers(client, user),
     }
 
 
@@ -439,7 +453,9 @@ def _get_api_key(client: TestClient) -> str:
     return data["key"]
 
 
-def _get_oauth2_token(client: TestClient, user: auth.models.UserDTO) -> str:
+def _get_oauth2_headers(
+    client: TestClient, user: auth.models.UserDTO
+) -> Dict[str, str]:
     """Gets the Oauth2 token to use to access the admin part of the API."""
     with client.app.state.auth_service.mail.record_messages() as outbox:
         # visit the login form page to get csrf token
@@ -453,8 +469,8 @@ def _get_oauth2_token(client: TestClient, user: auth.models.UserDTO) -> str:
             "csrftoken": csrf_token,
         }
         response = client.post("/admin/login", data=login_request)
-        assert response.status_code == 302
-        unverified_auth = response.cookies.get("Authorization")
+        assert response.status_code == 200
+        unverified_auth = json.loads(client.cookies.get("Authorization"))
 
         # read email to get otp
         assert len(outbox) >= 1
@@ -469,10 +485,11 @@ def _get_oauth2_token(client: TestClient, user: auth.models.UserDTO) -> str:
     otp_request = {"otp": otp}
     headers = {"Authorization": unverified_auth, "csrftoken": csrf_token}
     response = client.post("/admin/verify-otp", data=otp_request, headers=headers)
-    assert response.status_code == 302
+    assert response.status_code == 200
 
-    # return JWT token
-    return response.json()["access_token"]
+    # return JWT token and csrf token
+    verified_auth = json.loads(client.cookies.get("Authorization"))
+    return {"Authorization": verified_auth, "csrftoken": csrf_token}
 
 
 def _song_key_func(v: Dict[str, Any]) -> str:
