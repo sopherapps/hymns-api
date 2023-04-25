@@ -15,6 +15,7 @@ from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
 from starlette.types import ASGIApp, Message
 
 import services
+from api.errors import HTTPAuthenticationError
 
 T = TypeVar("T")
 
@@ -208,7 +209,7 @@ class OAuth2PasswordBearerCookie(OAuth2):
         flows = OAuthFlows(password={"tokenUrl": tokenUrl, "scopes": scopes})
         super().__init__(flows=flows, scheme_name=scheme_name, auto_error=auto_error)
 
-    async def get_multiple_tokens(self, request: Request) -> Optional[List[str]]:
+    async def get_multiple_tokens(self, request: Request) -> List[str]:
         """Retrieves the tokens from the header, cookie etc as a list"""
         tokens = []
         possible_locations = ["headers", "cookies"]
@@ -220,21 +221,14 @@ class OAuth2PasswordBearerCookie(OAuth2):
                 if scheme.lower() == "bearer":
                     tokens.append(param)
 
-        if len(tokens) < 1:
-            if self.auto_error:
-                raise HTTPException(
-                    status_code=HTTP_401_UNAUTHORIZED,
-                    detail="Not authenticated",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-            else:
-                return None
-
         return tokens
 
     async def __call__(self, request: Request) -> Optional[str]:
         tokens = await self.get_multiple_tokens(request)
-        if tokens:
-            return tokens[0]
+        if len(tokens) < 1:
+            if self.auto_error:
+                raise HTTPAuthenticationError()
+            else:
+                return None
 
-        return None
+        return tokens[0]

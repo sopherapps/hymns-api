@@ -15,7 +15,7 @@ from services import auth, hymns
 from services.auth.models import Application, UserDTO
 from services.hymns.models import PaginatedResponse
 
-public_api = FastAPI(openapi_prefix="/api")
+public_api = FastAPI(root_path="/api")
 public_api.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -1,7 +1,7 @@
 """Routes for the admin site"""
 from typing import List
 
-from fastapi import Depends, Form, FastAPI, status
+from fastapi import Depends, Form, FastAPI, status, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -10,16 +10,18 @@ from fastapi.requests import Request
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from fastapi.responses import Response
 
 import settings
 from api.dependencies import get_current_user, oauth2_scheme
+from api.errors import HTTPAuthenticationError
 from api.models import PartialSong
 from api.utils import extract_result, CSRFMiddleware
 from services import hymns, auth
 from services.auth.models import UserDTO, LoginResponse, OTPResponse
 from services.hymns.models import Song
 
-admin_site = FastAPI(openapi_prefix="/admin")
+admin_site = FastAPI(root_path="/admin")
 admin_site.add_middleware(CSRFMiddleware)
 admin_site.add_middleware(SlowAPIMiddleware)
 admin_site.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -27,7 +29,21 @@ admin_site.mount(
     "/static", StaticFiles(directory=settings.get_static_folder()), name="static"
 )
 _cookie_ttl: int = 1800
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=settings.get_templates_folder())
+
+
+@admin_site.exception_handler(HTTPAuthenticationError)
+async def redirect_unauthenticated_to_login(
+    request: Request, exc: HTTPAuthenticationError
+) -> Response:
+    return RedirectResponse(url=request.url_for("login"))
+
+
+@admin_site.exception_handler(HTTPException)
+async def redirect_to_error_page(request: Request, exc: HTTPException) -> Response:
+    return templates.TemplateResponse(
+        "error.html", {"request": request, "detail": exc.detail}
+    )
 
 
 @admin_site.put("/{language}/{number}", response_model=Song)

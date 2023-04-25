@@ -24,6 +24,11 @@ def get_static_folder():
     return os.path.join(_root_path, "static")
 
 
+def get_templates_folder():
+    """Returns the templates folder"""
+    return os.path.join(_root_path, "templates")
+
+
 def get_db_uri() -> str:
     """Gets the db path for the app"""
     return os.getenv("DB_PATH", _default_db_path)

@@ -8,6 +8,7 @@ from starlette.requests import Request
 import funml as ml
 from starlette.status import HTTP_401_UNAUTHORIZED
 
+from api.errors import HTTPAuthenticationError
 from api.utils import OAuth2PasswordBearerCookie, extract_result, raise_http_error
 from services import auth
 from services.auth import is_valid_api_key
@@ -38,22 +39,17 @@ async def get_current_user(
 ) -> UserDTO:
     """Gets the current logged in user
 
+    If the user is not logged in, it redirects to the login page
+
     Args:
         request: the FastAPI request
         tokens: the list of potential JWT tokens got from the oauth headers, cookies etc
 
     Returns:
         the User who is logged in
-
-    Raises:
-        raises HTTPException in case of any error
     """
-    if not tokens:
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    if len(tokens) < 1:
+        raise HTTPAuthenticationError()
 
     exp = None
     for token in tokens:

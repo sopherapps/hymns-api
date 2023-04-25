@@ -28,32 +28,23 @@
             </div>
         </header>
         <section class="flex text-gray-600 relative flex-1">
-            <form class="w-4/5 md:w-2/4 xl:w-1/4 flex justify-center items-center mx-auto" method="post" action="{{url_for('login')}}">
+            <div class="w-4/5 md:w-2/4 xl:w-1/4 flex justify-center items-center mx-auto">
                 <div class="flex flex-wrap px-5 py-5">
                     <div class="w-full border-b border-gray-200 mb-5">
-                        <h2 class="py-3">Login</h2>
+                        <h2 class="py-3 text-3xl">Oops</h2>
                     </div>
-                    <div class="w-full">
+                    <div class="w-full py-5">
                         <div class="relative">
-                            <label for="username" class="leading-5 text-xs text-gray-600">Username</label>
-                            <input type="text" id="username" name="username"
-                                class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out">
+                            <p class="leading-5 text-lg text-gray-600">{{ detail }}</p>
                         </div>
                     </div>
                     <div class="w-full">
                         <div class="relative">
-                            <label for="password" class="leading-5 text-xs text-gray-600">Language</label>
-                            <input type="password" id="password" name="password"
-                                class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out">
+                            <p class="leading-5 text-sm text-gray-600">Go back <a class="text-indigo-500" href="{{url_for('get_admin_home')}}">Home</a></p>
                         </div>
                     </div>
-
-                    <input type="hidden" name="csrftoken" value="{{ request.state.csrftoken }}" />
-
-                    <button type="submit"
-                        class="w-full text-white bg-indigo-500 border-0 py-1 px-3 my-5 focus:outline-none hover:bg-indigo-600 rounded text-sm">Login</button>
                 </div>
-            </form>
+            </div>
         </section>
         <footer class="text-gray-600">
             <div class="bg-gray-100">
