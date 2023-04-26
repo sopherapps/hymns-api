@@ -14,7 +14,7 @@ hymns_service_conf: Optional[config.ServiceConfig] = None
 otp_verification_url: Optional[str] = None
 
 
-async def initialize(force: bool = False):
+async def _initialize(force: bool = False):
     """Initializes the auth service"""
     settings.initialize()
 
@@ -45,61 +45,81 @@ async def initialize(force: bool = False):
 
 async def create_account(username: str, email: str, password: str):
     """Creates a new admin account"""
-    await initialize()
+    try:
+        await _initialize()
 
-    user = await auth_service.users_store.get(username)
-    if user is not None:
-        raise ValueError("user already exists")
+        user = await auth_service.users_store.get(username)
+        if user is not None:
+            raise ValueError("user already exists")
 
-    res = await auth.create_user(
-        auth_service, UserDTO(username=username, email=email, password=password)
-    )
-    return _handle_result(res)
+        res = await auth.create_user(
+            auth_service, UserDTO(username=username, email=email, password=password)
+        )
+        result = _handle_result(res)
+    finally:
+        await _shutdown()
+
+    return result
 
 
 async def delete_account(username: str, password: str):
     """Deletes the account whose username and password are given"""
-    await initialize()
+    try:
+        await _initialize()
 
-    user = await auth.get_user_with_credentials(
-        auth_service, username=username, password=password
-    )
-    if user is None:
-        raise auth.errors.AuthenticationError("invalid credentials")
+        user = await auth.get_user_with_credentials(
+            auth_service, username=username, password=password
+        )
+        if user is None:
+            raise auth.errors.AuthenticationError("invalid credentials")
 
-    res = await auth.remove_user(auth_service, username=username)
-    return _handle_result(res)
+        res = await auth.remove_user(auth_service, username=username)
+        result = _handle_result(res)
+    finally:
+        await _shutdown()
+
+    return result
 
 
 async def change_password(username: str, old_password: str, new_password: str):
     """Changes the password of the account"""
-    await initialize()
+    try:
+        await _initialize()
 
-    res = await auth.change_password(
-        auth_service,
-        data=ChangePasswordRequest(
-            original_password=old_password,
-            new_password=new_password,
-            username=username,
-        ),
-    )
-    return _handle_result(res)
+        res = await auth.change_password(
+            auth_service,
+            data=ChangePasswordRequest(
+                original_password=old_password,
+                new_password=new_password,
+                username=username,
+            ),
+        )
+        result = _handle_result(res)
+    finally:
+        await _shutdown()
+
+    return result
 
 
 async def login(username: str, password: str):
     """Attempts to log the user in"""
-    await initialize()
+    try:
+        await _initialize()
 
-    res = await auth.login(
-        auth_service,
-        username=username,
-        password=password,
-        otp_verification_url=otp_verification_url,
-    )
-    return _handle_result(res)
+        res = await auth.login(
+            auth_service,
+            username=username,
+            password=password,
+            otp_verification_url=otp_verification_url,
+        )
+        result = _handle_result(res)
+    finally:
+        await _shutdown()
+
+    return result
 
 
-async def shutdown():
+async def _shutdown():
     """Gracefully shuts down after the app is finished"""
     await Store.destroy_stores()
     global auth_service

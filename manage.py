@@ -16,13 +16,8 @@ def create_account(
     password: str = typer.Option(...),
 ):
     """Creates a new admin account"""
-    try:
-        asyncio.run(
-            cli.create_account(username=username, email=email, password=password)
-        )
-        typer.echo("user created successfully")
-    finally:
-        asyncio.run(cli.shutdown())
+    asyncio.run(cli.create_account(username=username, email=email, password=password))
+    typer.echo("user created successfully")
 
 
 @app.command()
@@ -30,11 +25,8 @@ def delete_account(
     username: str = typer.Option(...), password: str = typer.Option(...)
 ):
     """Deletes the account whose username and password are given"""
-    try:
-        asyncio.run(cli.delete_account(username=username, password=password))
-        typer.echo("user deleted successfully")
-    finally:
-        asyncio.run(cli.shutdown())
+    asyncio.run(cli.delete_account(username=username, password=password))
+    typer.echo("user deleted successfully")
 
 
 @app.command()
@@ -44,25 +36,13 @@ def change_password(
     new_password: str = typer.Option(...),
 ):
     """Changes the password of the account"""
-    try:
-        asyncio.run(
-            cli.change_password(
-                username=username, old_password=old_password, new_password=new_password
-            )
+    asyncio.run(
+        cli.change_password(
+            username=username, old_password=old_password, new_password=new_password
         )
-        typer.echo("password changed successfully")
-    finally:
-        asyncio.run(cli.shutdown())
-
-
-def shutdown():
-    """Gracefully shuts down the app"""
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(cli.shutdown())
+    )
+    typer.echo("password changed successfully")
 
 
 if __name__ == "__main__":
-    try:
-        app()
-    finally:
-        shutdown()
+    app()

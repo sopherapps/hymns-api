@@ -3,7 +3,6 @@ import asyncio
 import pytest
 from typer.testing import CliRunner
 
-from cli import shutdown
 from cli.auth import login
 from manage import app
 from services.auth.errors import AuthenticationError
@@ -154,8 +153,4 @@ def _user_exists(username: str, password: str) -> bool:
 
 async def _guarded_login(username: str, password: str):
     """Logs in and always shuts down the app after"""
-    try:
-        result = await login(username=username, password=password)
-    finally:
-        await shutdown()
-    return result
+    return await login(username=username, password=password)
