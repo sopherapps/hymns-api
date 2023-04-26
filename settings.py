@@ -70,7 +70,7 @@ def get_api_key_length() -> int:
 
 
 def get_rate_limit() -> str:
-    """Gets the rate limit for all routes"""
+    """Gets the rate limit for all apps"""
     return os.getenv("RATE_LIMIT", "5/minute")
 
 

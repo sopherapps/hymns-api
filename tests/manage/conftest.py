@@ -4,7 +4,7 @@ from cryptography.fernet import Fernet
 from pytest_lazyfixture import lazy_fixture
 from typer.testing import CliRunner
 
-from api.routes import app
+from api.apps import app
 
 from tests.utils.shared import setup_mail_config, aio_pytest_fixture
 

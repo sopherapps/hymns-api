@@ -6,7 +6,7 @@ import pytest
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi.testclient import TestClient
 
-import api.routes
+import api.apps
 from api.models import Song
 from services import auth
 from .conftest import (

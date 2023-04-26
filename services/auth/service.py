@@ -9,7 +9,7 @@ from cryptography.fernet import Fernet
 
 from services.auth.types import AuthService
 from services.config import get_auth_store, get_users_store, get_service_config
-from .errors import AuthenticationError
+from .errors import AuthenticationError, OTPVerificationError
 from .models import (
     UserInDb,
     LoginResponse,
@@ -307,6 +307,10 @@ async def verify_otp(
 
     Returns:
         an ml.Result.OK(OTPResponse) of the verified JWT token if the OTP is right for the given token
+
+    Raises:
+        OTPVerificationError: maximum attempts to verify OTP
+        OTPVerificationError: invalid OTP
     """
     try:
         user = await _get_user_in_jwt(
@@ -319,13 +323,13 @@ async def verify_otp(
                 title="You Have Maxed Out OTP Verification Attempts",
                 msg="Someone has tried to verify an OTP multiple times and they have gone beyond the permissible limits. If it is not you, please change your password immediately",
             )
-            raise AuthenticationError("maximum attempts to verify OTP")
+            raise OTPVerificationError("maximum attempts to verify OTP")
 
         if not _is_otp_valid(service, user=user, otp=otp):
             await _update_user(
                 service, user=user, login_attempts=user.login_attempts + 1
             )
-            raise AuthenticationError("invalid OTP")
+            raise OTPVerificationError("invalid OTP")
         else:
             otp_counter = int(decrypt_str(service.fernet, user.otp_counter))
             user.otp_counter = encrypt_str(service.fernet, f"{otp_counter + 1}")
@@ -435,10 +439,14 @@ async def _get_user_in_jwt(
 
     Returns:
         the UserInDb
+
+    Raises:
+        OTPVerificationError: the one time password sent to you has not been verified yet
+        AuthenticationError: invalid token
     """
     payload = decode_jwt(token, secret_key=service.api_secret, algorithm=_ALGORITHM)
     if is_verified and not payload["verified"]:
-        raise AuthenticationError(
+        raise OTPVerificationError(
             "the one time password sent to you has not been verified yet"
         )
 

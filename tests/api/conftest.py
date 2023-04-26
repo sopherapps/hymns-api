@@ -5,7 +5,7 @@ from cryptography.fernet import Fernet
 from pytest_lazyfixture import lazy_fixture
 from fastapi.testclient import TestClient
 
-from api.routes import app
+from api.apps import app
 from services import auth
 from tests.utils.postgres import create_pg_user_table, pg_upsert_user
 

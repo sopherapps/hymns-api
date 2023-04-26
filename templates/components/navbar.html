@@ -1,0 +1,28 @@
+<header class="text-gray-600 border-b border-gray-200">
+            <div class="container mx-auto flex flex-wrap p-5 flex-col md:flex-row items-center">
+                <a class="flex title-font font-medium items-center text-gray-900 mb-4 md:mb-0">
+                    <span class="ml-3 text-sm">Hymns Admin</span>
+                </a>
+                <nav class="md:ml-auto flex flex-wrap items-center text-sm justify-center">
+                    {% if request.url|string != url_for('get_admin_home') %}
+                    <a class="block mr-5 hover:text-gray-900" href="{{ url_for('get_admin_home') }}">Dashboard</a>
+                    {% endif %}
+
+                    {% if request.user %}
+                    <form class="h-fit w-fit" method="post" action="{{url_for('logout')}}">
+                    <button class="block mr-5 hover:text-gray-900" type="submit">Logout</button>
+                        <input hidden>
+                        </form>
+                    {% endif %}
+
+                    <a
+                            href="/"
+                        class="inline-flex items-center bg-gray-100 border-0 py-1 px-3 focus:outline-none hover:bg-gray-200 rounded text-sm mt-4 md:mt-0">Website
+                        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="2" class="w-4 h-4 ml-1" viewBox="0 0 24 24">
+                            <path d="M5 12h14M12 5l7 7-7 7"></path>
+                        </svg>
+                    </a>
+                </nav>
+            </div>
+        </header>

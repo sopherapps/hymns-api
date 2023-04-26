@@ -1,35 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
+{% block title %}Hymns | Create{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hymns Admin</title>
-    <link href="{{ url_for('static', path='/css/output.css') }}" rel="stylesheet">
-</head>
-
-<body>
-    <div class="h-screen flex flex-col">
-        <header class="text-gray-600 border-b border-gray-200">
-            <div class="container mx-auto flex flex-wrap p-5 flex-col md:flex-row items-center">
-                <a class="flex title-font font-medium items-center text-gray-900 mb-4 md:mb-0">
-                    <span class="ml-3 text-sm">Hymns Admin</span>
-                </a>
-                <nav class="md:ml-auto flex flex-wrap items-center text-sm justify-center">
-                    <a class="block mr-5 hover:text-gray-900">Logout</a>
-                    <button
-                        class="text-white bg-indigo-500 border-0 py-1 px-3 mx-2 focus:outline-none hover:bg-indigo-600 rounded text-sm md:mt-0">Save</button>
-                    <button
-                        class="inline-flex items-center bg-gray-100 border-0 py-1 px-3 focus:outline-none hover:bg-gray-200 rounded text-sm mt-4 md:mt-0">Website
-                        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2" class="w-4 h-4 ml-1" viewBox="0 0 24 24">
-                            <path d="M5 12h14M12 5l7 7-7 7"></path>
-                        </svg>
-                    </button>
-                </nav>
-            </div>
-        </header>
+{% block main_content %}
         <section class="text-gray-600 relative flex-1">
             <div class="container px-5 py-5 mx-auto">
                 <div class="grid grid-cols-4">
@@ -63,7 +35,7 @@
                             </div>
                             <div class="w-full">
                                 <div class="relative">
-                                    <label for="key" class="leading-5 text-xs text-gray-600">Key</label>
+                                    <label for="song-key" class="leading-5 text-xs text-gray-600">Key</label>
                                     <select id="song-key" name="key"
                                         class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out"
                                         name="key" placeholder="key">
@@ -88,22 +60,9 @@
                 </div>
             </div>
         </section>
-        <footer class="text-gray-600">
-            <div class="bg-gray-100">
-                <div class="container mx-auto py-4 px-5 flex flex-wrap flex-col sm:flex-row">
-                    <p class="text-gray-500 text-sm text-center sm:text-left">© 2023 SopherApps —
-                        <a href="https://sopherapps.com" class="text-gray-600 ml-1" target="_blank"
-                            rel="noopener noreferrer">@sopherapps</a>
-                    </p>
-                    <span
-                        class="sm:ml-auto sm:mt-0 mt-2 sm:w-auto w-full sm:text-left text-center text-gray-500 text-sm">
-                        "Come to me, all you who are weary and burdened, and I will give you rest." - Matthew 11:
-                        28</span>
-                </div>
-            </div>
-        </footer>
-    </div>
+{% endblock %}
 
+{% block root_extras %}
     <div id="tone-selector-modal"
         class="hidden absolute bg-gray-900 border px-5 py-3 rounded before:content-[''] before:absolute before:bg-inherit before:w-[5%] before:h-4 before:top-[75%] before:left-[45%] before:z-2 before:skew-y-[45deg] after:content-[''] after:absolute after:bg-inherit after:w-[5%] after:h-4 after:top-[75%] after:left-[50%] after:z-2 after:-skew-y-[45deg]"
         style="bottom: 50%; left: 50%;">
@@ -123,6 +82,4 @@
     </div>
 
     <script src="{{ url_for('static', path='/js/create-edit.js') }}"></script>
-</body>
-
-</html>
+{% endblock %}

@@ -16,3 +16,20 @@ class AuthenticationError(Exception):
 
     def __str__(self):
         return self.__repr__()
+
+
+class OTPVerificationError(Exception):
+    """Exception returned when the one-time password has not been verified.
+
+    Args:
+        msg: the msg
+    """
+
+    def __init__(self, msg: str = ""):
+        self.msg = msg
+
+    def __repr__(self):
+        return f"OTPVerificationError: {self.msg}"
+
+    def __str__(self):
+        return self.__repr__()

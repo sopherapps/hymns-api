@@ -1,34 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
+{% block title %}Hymns | Verify OTP{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hymns Admin</title>
-    <link href="{{ url_for('static', path='/css/output.css') }}" rel="stylesheet">
-</head>
-
-<body>
-    <div class="h-screen flex flex-col">
-        <header class="text-gray-600 border-b border-gray-200">
-            <div class="container mx-auto flex flex-wrap p-5 flex-col md:flex-row items-center">
-                <a class="flex title-font font-medium items-center text-gray-900 mb-4 md:mb-0">
-                    <span class="ml-3 text-sm">Hymns Admin</span>
-                </a>
-                <nav class="md:ml-auto flex flex-wrap items-center text-sm justify-center">
-                    <button
-                        class="inline-flex items-center bg-gray-100 border-0 py-1 px-3 focus:outline-none hover:bg-gray-200 rounded text-sm mt-4 md:mt-0">Website
-                        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2" class="w-4 h-4 ml-1" viewBox="0 0 24 24">
-                            <path d="M5 12h14M12 5l7 7-7 7"></path>
-                        </svg>
-                    </button>
-                </nav>
-            </div>
-        </header>
+{% block main_content %}
         <section class="flex text-gray-600 relative flex-1">
-            <form class="w-4/5 md:w-2/4 xl:w-1/4 flex justify-center items-center mx-auto" method="post" action="url_for('api_verify_otp')">
+            <form class="w-4/5 md:w-2/4 xl:w-1/4 flex justify-center items-center mx-auto" method="post" action="{{url_for('verify_otp')}}">
                 <div class="flex flex-wrap px-5 py-5">
                     <div class="w-full border-b border-gray-200 mb-5">
                         <h2 class="py-3">Confirm OTP</h2>
@@ -45,7 +20,7 @@
                     <input type="hidden" name="csrftoken" value="{{ request.state.csrftoken }}" >
 
                     <button type="submit"
-                        class="w-full text-white bg-indigo-500 border-0 py-1 px-3 my-5 focus:outline-none hover:bg-indigo-600 rounded text-sm">Login</button>
+                        class="w-full text-white bg-indigo-500 border-0 py-1 px-3 my-5 focus:outline-none hover:bg-indigo-600 rounded text-sm">Submit</button>
                 </div>
             </form>
         </section>
@@ -64,6 +39,4 @@
             </div>
         </footer>
     </div>
-</body>
-
-</html>
+{% endblock %}
