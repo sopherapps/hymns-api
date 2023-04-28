@@ -1,23 +1,24 @@
 """Routes that are public"""
-from typing import List, Union
+from typing import List
 
-from fastapi import Query, Security, FastAPI
-from fastapi.requests import Request
+from fastapi import Query, FastAPI, Depends, Security, HTTPException
+from fastapi.security import APIKeyHeader
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from starlette.authentication import requires
-from starlette.middleware.authentication import AuthenticationMiddleware
+from starlette import status
 from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
 
-from api.auth import APIKeyHeaderAuthBackend
 from api.models import SongDetail
 from api.utils import extract_result
 from services import auth, hymns
+from services.auth import is_valid_api_key
 from services.auth.models import Application
 from services.hymns.models import PaginatedResponse
 
 public_api = FastAPI(root_path="/api")
+api_key_header = APIKeyHeader(name="x-api-key")
 public_api.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,10 +26,22 @@ public_api.add_middleware(
     allow_headers=["*"],
 )
 public_api.add_middleware(SlowAPIMiddleware)
-public_api.add_middleware(
-    AuthenticationMiddleware, backend=APIKeyHeaderAuthBackend(name="x-api-key")
-)
 public_api.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+async def _get_api_key(
+    request: Request,
+    header_key: str = Security(api_key_header),
+) -> str:
+    """Dependency for retrieving and validating the API key from the header or cookie"""
+    if header_key and await is_valid_api_key(
+        request.app.state.auth_service, header_key
+    ):
+        return header_key
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN, detail="could not validate credentials"
+    )
 
 
 @public_api.post("/register", response_model=Application)
@@ -42,13 +55,13 @@ async def register_app(request: Request):
     return extract_result(res)
 
 
-@requires("authenticated")
 @public_api.get("/{language}/{number}", response_model=SongDetail)
 async def get_song_detail(
     request: Request,
     language: str,
     number: int,
     translation: List[str] = Query(default=()),
+    _: str = Depends(_get_api_key),
 ):
     """Displays the details of the song whose number is given"""
     languages = [language, *translation]
@@ -64,7 +77,6 @@ async def get_song_detail(
     return song
 
 
-@requires("authenticated")
 @public_api.get("/{language}/find-by-title/{q}", response_model=PaginatedResponse)
 async def query_by_title(
     request: Request,
@@ -72,6 +84,7 @@ async def query_by_title(
     q: str,
     skip: int = 0,
     limit: int = 0,
+    _: str = Depends(_get_api_key),
 ):
     """Returns list of songs whose titles match the search term `q`"""
     res = await hymns.query_songs_by_title(
@@ -80,7 +93,6 @@ async def query_by_title(
     return extract_result(res)
 
 
-@requires("authenticated")
 @public_api.get("/{language}/find-by-number/{q}", response_model=PaginatedResponse)
 async def query_by_number(
     request: Request,
@@ -88,6 +100,7 @@ async def query_by_number(
     q: int,
     skip: int = 0,
     limit: int = 0,
+    _: str = Depends(_get_api_key),
 ):
     """Returns list of songs whose numbers match the search term `q`"""
     res = await hymns.query_songs_by_number(

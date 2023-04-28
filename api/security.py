@@ -1,12 +1,17 @@
 """Functionality for security"""
 import uuid
-from typing import Tuple
+from typing import Tuple, List, Optional
 
 import starlette
+from fastapi.openapi.models import OAuthFlows
+from fastapi.security import OAuth2
+from fastapi.security.utils import get_authorization_scheme_param
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
-from starlette.responses import Response, PlainTextResponse
+from starlette.responses import Response
 from starlette.types import ASGIApp, Message
+
+from api.errors import HTTPAuthenticationError
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):
@@ -145,3 +150,41 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             )
 
         return response
+
+
+class OAuth2BearerScheme(OAuth2):
+    def __init__(
+        self,
+        token_url: str,
+        scheme_name: str = "bearer",
+        scopes: dict = None,
+        auto_error: bool = True,
+    ):
+        if not scopes:
+            scopes = {}
+        flows = OAuthFlows(password={"tokenUrl": token_url, "scopes": scopes})
+        super().__init__(flows=flows, scheme_name=scheme_name, auto_error=auto_error)
+
+    async def get_multiple_tokens(self, request: Request) -> List[str]:
+        """Retrieves the tokens from the header, cookie etc as a list"""
+        tokens = []
+        possible_locations = ["headers", "cookies"]
+
+        for location in possible_locations:
+            auth = getattr(request, location).get("Authorization")
+            if auth:
+                scheme, param = get_authorization_scheme_param(auth)
+                if scheme.lower() == self.scheme_name:
+                    tokens.append(param)
+
+        return tokens
+
+    async def __call__(self, request: Request) -> Optional[str]:
+        tokens = await self.get_multiple_tokens(request)
+        if len(tokens) < 1:
+            if self.auto_error:
+                raise HTTPAuthenticationError()
+            else:
+                return None
+
+        return tokens[0]

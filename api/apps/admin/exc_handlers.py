@@ -1,7 +1,7 @@
 from starlette.requests import Request
 from starlette.responses import Response, RedirectResponse
 
-from api.apps.admin.state import templates
+from api.apps.admin.utils import templates
 from api.errors import HTTPAuthenticationError
 from api.utils import to_http_exception_with_link
 

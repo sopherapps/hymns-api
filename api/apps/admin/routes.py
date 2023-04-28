@@ -9,21 +9,25 @@ from fastapi.requests import Request
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from starlette.authentication import requires
-from starlette.middleware.authentication import AuthenticationMiddleware
 
 import settings
 from api.apps.admin.exc_handlers import (
     redirect_to_error_page,
     redirect_unauthenticated_to_login,
 )
-from api.apps.admin.state import admin_site, oauth2_backend, cookie_ttl, templates
+from api.apps.admin.utils import (
+    admin_site,
+    oauth2_scheme,
+    cookie_ttl,
+    templates,
+    get_current_user,
+)
 from api.errors import HTTPAuthenticationError
 from api.models import PartialSong
 from api.utils import extract_result
 from api.security import CSRFMiddleware
 from services import hymns, auth
-from services.auth.models import LoginResponse, OTPResponse
+from services.auth.models import LoginResponse, OTPResponse, UserDTO
 from services.hymns.models import Song
 
 admin_site.add_middleware(SlowAPIMiddleware)
@@ -33,17 +37,19 @@ admin_site.add_exception_handler(
 )
 admin_site.add_exception_handler(Exception, redirect_to_error_page)
 admin_site.add_middleware(CSRFMiddleware)
-admin_site.add_middleware(
-    AuthenticationMiddleware, backend=oauth2_backend, on_error=redirect_to_error_page
-)
 admin_site.mount(
     "/static", StaticFiles(directory=settings.get_static_folder()), name="static"
 )
 
 
-@requires("authenticated")
 @admin_site.put("/{language}/{number}", response_model=Song)
-async def update_song(request: Request, language: str, number: int, song: PartialSong):
+async def update_song(
+    request: Request,
+    language: str,
+    number: int,
+    song: PartialSong,
+    _: UserDTO = Depends(get_current_user),
+):
     """Updates the song whose number is given"""
     original = await _get_song(request, language=language, number=number)
     new_data = {**original.dict(), **song.dict(exclude_unset=True)}
@@ -52,9 +58,10 @@ async def update_song(request: Request, language: str, number: int, song: Partia
     return extract_result(res)
 
 
-@requires("authenticated")
 @admin_site.delete("/{language}/{number}", response_model=List[Song])
-async def delete_song(request: Request, language: str, number: int):
+async def delete_song(
+    request: Request, language: str, number: int, _: UserDTO = Depends(get_current_user)
+):
     """Deletes the song whose number is given"""
     res = await hymns.delete_song(
         request.app.state.hymns_service, number=number, language=language
@@ -62,9 +69,10 @@ async def delete_song(request: Request, language: str, number: int):
     return extract_result(res)
 
 
-@requires("authenticated")
 @admin_site.post("/", response_class=HTMLResponse)
-async def create_song(request: Request, song: Song):
+async def create_song(
+    request: Request, song: Song, _: UserDTO = Depends(get_current_user)
+):
     """API route that creates a new song"""
     res = await hymns.add_song(request.app.state.hymns_service, song=song)
     new_song = extract_result(res)
@@ -104,9 +112,8 @@ async def login(request: Request, data: OAuth2PasswordRequestForm = Depends()):
     return response
 
 
-@requires("authenticated")
 @admin_site.post("/logout", response_class=HTMLResponse)
-async def logout(request: Request):
+async def logout(request: Request, _: UserDTO = Depends(get_current_user)):
     """Logout the current user."""
     admin_home_url = request.url_for("get_admin_home")
     response = RedirectResponse(url=admin_home_url, status_code=status.HTTP_302_FOUND)
@@ -126,7 +133,7 @@ async def logout(request: Request):
 
 @admin_site.post("/verify-otp", response_class=HTMLResponse)
 async def verify_otp(
-    request: Request, otp: str = Form(), token: str = Depends(oauth2_backend.scheme)
+    request: Request, otp: str = Form(), token: str = Depends(oauth2_scheme)
 ):
     """Verifies the one-time password got by email"""
     res = await auth.verify_otp(
@@ -163,30 +170,30 @@ async def get_verify_otp(request: Request):
     return templates.TemplateResponse("verify-otp.html", {"request": request})
 
 
-@requires("authenticated")
 @admin_site.get("/create", response_class=HTMLResponse)
-async def get_create_song(request: Request):
+async def get_create_song(request: Request, user: UserDTO = Depends(get_current_user)):
     """Creates a new song"""
-    return templates.TemplateResponse("create.html", {"request": request})
+    return templates.TemplateResponse("create.html", {"request": request, "user": user})
 
 
-@requires("authenticated")
 @admin_site.get("/edit/{language}/{number}", response_class=HTMLResponse)
 async def get_edit_song(
     request: Request,
     language: str,
     number: int,
+    user: UserDTO = Depends(get_current_user),
 ):
     """Edits a new song"""
     song = await _get_song(request, language=language, number=number)
-    return templates.TemplateResponse("edit.html", {"request": request, "song": song})
+    return templates.TemplateResponse(
+        "edit.html", {"request": request, "song": song, "user": user}
+    )
 
 
-@requires("authenticated")
 @admin_site.get("/", response_class=HTMLResponse)
-async def get_admin_home(request: Request):
+async def get_admin_home(request: Request, user: UserDTO = Depends(get_current_user)):
     """Admin home"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request, "user": user})
 
 
 async def _get_song(request: Request, language: str, number: int) -> Song:

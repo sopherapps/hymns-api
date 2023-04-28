@@ -4,7 +4,6 @@ import funml as ml
 import starlette.authentication
 
 from starlette import status
-from starlette.requests import Request
 
 import services
 from api.errors import HTTPExceptionWithLink

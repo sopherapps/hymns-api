@@ -4,11 +4,11 @@
                     <span class="ml-3 text-sm">Hymns Admin</span>
                 </a>
                 <nav class="md:ml-auto flex flex-wrap items-center text-sm justify-center">
-                    {% if request.url|string != url_for('get_admin_home') %}
+                    {% if request.url|string != url_for('get_admin_home') and user %}
                     <a class="block mr-5 hover:text-gray-900" href="{{ url_for('get_admin_home') }}">Dashboard</a>
                     {% endif %}
 
-                    {% if request.user %}
+                    {% if user %}
                     <form class="h-fit w-fit" method="post" action="{{url_for('logout')}}">
                     <button class="block mr-5 hover:text-gray-900" type="submit">Logout</button>
                         <input hidden>
