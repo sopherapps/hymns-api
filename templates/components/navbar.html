@@ -10,9 +10,9 @@
 
                     {% if user %}
                     <form class="h-fit w-fit" method="post" action="{{url_for('logout')}}">
-                    <button class="block mr-5 hover:text-gray-900" type="submit">Logout</button>
-                        <input hidden>
-                        </form>
+                        <button class="block mr-5 hover:text-gray-900" type="submit">Logout</button>
+                        <input type="hidden" name="csrftoken" value="{{ request.state.csrftoken }}">
+                    </form>
                     {% endif %}
 
                     <a
