@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Dict
 
 
 class MusicalNote(str, Enum):
@@ -26,3 +27,16 @@ class MusicalNote(str, Enum):
     A_SHARP_MINOR = "A#m"
     B_MAJOR = "B"
     B_MINOR = "Bm"
+
+    @classmethod
+    def set(cls) -> Dict[str, str]:
+        """Returns the complete set of the members as a map"""
+        return {
+            _normalize_musical_note_name(name): cls.__members__[name]
+            for name in cls.__members__
+        }
+
+
+def _normalize_musical_note_name(note_name: str) -> str:
+    """Converts the name of the musical note name to a human-friendly alternative"""
+    return note_name.replace("_", " ").replace("SHARP", "#").capitalize()

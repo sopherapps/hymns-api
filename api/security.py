@@ -2,7 +2,6 @@
 import uuid
 from typing import Tuple, List, Optional
 
-import starlette
 from fastapi.openapi.models import OAuthFlows
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
@@ -109,18 +108,14 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             if (
                 not token_from_cookie or len(token_from_cookie) < 30
             ):  # Sanity check. UUID always > 30.
-                raise starlette.authentication.AuthenticationError(
-                    "No CSRF cookie set!"
-                )
+                raise HTTPAuthenticationError(detail="No CSRF cookie set!")
                 # return PlainTextResponse(
                 #     "No CSRF cookie set!", status_code=403
                 # )  # 🔴 Fail check.
             if (str(token_from_cookie) != str(token_from_form)) and (
                 str(token_from_cookie) != str(token_from_header)
             ):
-                raise starlette.authentication.AuthenticationError(
-                    "CSRF cookie does not match!"
-                )
+                raise HTTPAuthenticationError(detail="CSRF cookie does not match!")
         else:
             # 🍪 Generates the cookie if one does not exist.
             # Has to be the same token throughout session! NOT a nonce.
@@ -165,7 +160,7 @@ class OAuth2BearerScheme(OAuth2):
         flows = OAuthFlows(password={"tokenUrl": token_url, "scopes": scopes})
         super().__init__(flows=flows, scheme_name=scheme_name, auto_error=auto_error)
 
-    async def get_multiple_tokens(self, request: Request) -> List[str]:
+    async def __get_multiple_tokens(self, request: Request) -> List[str]:
         """Retrieves the tokens from the header, cookie etc as a list"""
         tokens = []
         possible_locations = ["headers", "cookies"]
@@ -180,7 +175,7 @@ class OAuth2BearerScheme(OAuth2):
         return tokens
 
     async def __call__(self, request: Request) -> Optional[str]:
-        tokens = await self.get_multiple_tokens(request)
+        tokens = await self.__get_multiple_tokens(request)
         if len(tokens) < 1:
             if self.auto_error:
                 raise HTTPAuthenticationError()

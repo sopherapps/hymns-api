@@ -77,6 +77,7 @@ By contributing, you agree that your contributions will be licensed under its MI
 - Install the dependencies
 
   ```bash
+  pip install -r requirements/prod.txt
   pip install -r requirements/dev.txt
   ```
 

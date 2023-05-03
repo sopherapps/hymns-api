@@ -1,5 +1,5 @@
 """Routes for the admin site"""
-from typing import List
+from typing import List, Tuple
 
 from fastapi import Depends, Form, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -21,6 +21,7 @@ from api.apps.admin.utils import (
     cookie_ttl,
     templates,
     get_current_user,
+    LazySessionMiddleware,
 )
 from api.errors import HTTPAuthenticationError
 from api.models import PartialSong
@@ -29,6 +30,7 @@ from api.security import CSRFMiddleware
 from services import hymns, auth
 from services.auth.models import LoginResponse, OTPResponse, UserDTO
 from services.hymns.models import Song
+from services.types import MusicalNote
 
 admin_site.add_middleware(SlowAPIMiddleware)
 admin_site.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -37,6 +39,7 @@ admin_site.add_exception_handler(
 )
 admin_site.add_exception_handler(Exception, redirect_to_error_page)
 admin_site.add_middleware(CSRFMiddleware)
+admin_site.add_middleware(LazySessionMiddleware, same_site="strict")
 admin_site.mount(
     "/static", StaticFiles(directory=settings.get_static_folder()), name="static"
 )
@@ -117,17 +120,7 @@ async def logout(request: Request, _: UserDTO = Depends(get_current_user)):
     """Logout the current user."""
     admin_home_url = request.url_for("get_admin_home")
     response = RedirectResponse(url=admin_home_url, status_code=status.HTTP_302_FOUND)
-    # to delete the cookie, set it to a max age of 0 to discard the cookie immediately
-    response.set_cookie(
-        "Authorization",
-        value="",
-        domain=admin_home_url.hostname,
-        httponly=True,
-        path="/",
-        max_age=0,
-        expires=1,
-        secure=admin_home_url.is_secure,
-    )
+    request.session.clear()
     return response
 
 
@@ -139,22 +132,25 @@ async def verify_otp(
     res = await auth.verify_otp(
         request.app.state.auth_service, otp=otp, unverified_token=token
     )
-    otp_result: OTPResponse = extract_result(res)
+    otp_result: Tuple[OTPResponse, UserDTO] = extract_result(res)
 
     admin_home_url = request.url_for("get_admin_home")
     # setting the status to 302 ensures the POST is transformed to a GET in the redirect
     # https://stackoverflow.com/questions/62119138/how-to-do-a-post-redirect-get-prg-in-fastapi
     response = RedirectResponse(url=admin_home_url, status_code=status.HTTP_302_FOUND)
+    # to delete the cookie, set it to a max age of 0 to discard the cookie immediately
     response.set_cookie(
         "Authorization",
-        value=f"{otp_result.token_type} {otp_result.access_token}",
+        value="",
         domain=admin_home_url.hostname,
         httponly=True,
         path="/",
-        max_age=cookie_ttl,
-        expires=cookie_ttl,
+        max_age=0,
+        expires=1,
         secure=admin_home_url.is_secure,
     )
+
+    request.session["user"] = otp_result[1].json()
     return response
 
 
@@ -173,7 +169,9 @@ async def get_verify_otp(request: Request):
 @admin_site.get("/create", response_class=HTMLResponse)
 async def get_create_song(request: Request, user: UserDTO = Depends(get_current_user)):
     """Creates a new song"""
-    return templates.TemplateResponse("create.html", {"request": request, "user": user})
+    return templates.TemplateResponse(
+        "create.html", {"request": request, "user": user, "notes": MusicalNote.set()}
+    )
 
 
 @admin_site.get("/edit/{language}/{number}", response_class=HTMLResponse)
@@ -186,7 +184,8 @@ async def get_edit_song(
     """Edits a new song"""
     song = await _get_song(request, language=language, number=number)
     return templates.TemplateResponse(
-        "edit.html", {"request": request, "song": song, "user": user}
+        "edit.html",
+        {"request": request, "song": song, "user": user, "notes": MusicalNote.set()},
     )
 
 

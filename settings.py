@@ -19,6 +19,11 @@ def initialize():
         dotenv.load_dotenv(_default_env_file)
 
 
+def is_production():
+    """Checks if the app is running in production"""
+    return os.getenv("APP_SETTINGS", "production").strip().lower() == "production"
+
+
 def get_static_folder():
     """Returns the static folder"""
     return os.path.join(_root_path, "static")

@@ -306,7 +306,7 @@ async def verify_otp(
     """Verifies the OTP given the unverified JWT token
 
     Returns:
-        an ml.Result.OK(OTPResponse) of the verified JWT token if the OTP is right for the given token
+        an ml.Result.OK(Tuple[OTPResponse, UserDTO]) of the verified JWT token if the OTP is right for the given token
 
     Raises:
         OTPVerificationError: maximum attempts to verify OTP
@@ -336,7 +336,9 @@ async def verify_otp(
             await _update_user(service, user=user, login_attempts=0)
 
             verified_jwt = _generate_jwt(service, username=user.username, verified=True)
-            return ml.Result.OK(OTPResponse(access_token=verified_jwt))
+            return ml.Result.OK(
+                (OTPResponse(access_token=verified_jwt), UserDTO.from_user_in_db(user))
+            )
     except Exception as exp:
         return ml.Result.ERR(exp)
 

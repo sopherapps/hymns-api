@@ -23,7 +23,7 @@ app.mount("/admin", admin_site)
 
 @app.on_event("startup")
 async def start():
-    """Initializes the hymns service"""
+    """Initializes the api"""
     settings.initialize()
 
     hymns_db_uri = settings.get_hymns_db_uri()

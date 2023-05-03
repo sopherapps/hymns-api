@@ -6,6 +6,7 @@ import pytest
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi.testclient import TestClient
 
+import api
 import api.apps
 from api.models import Song
 from services import auth
@@ -283,7 +284,7 @@ async def test_api_key(client: TestClient):
     ]
     with client:
         api_key = _get_api_key(client)
-        auth_headers = _get_oauth2_headers(client, test_user)
+        auth_headers = _get_admin_headers(client, test_user)
 
         no_api_key_headers = {"Content-Type": "application/json"}
         right_headers = {"x-api-key": api_key}
@@ -319,31 +320,30 @@ async def test_api_key(client: TestClient):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("client", test_clients_fixture)
-async def test_oauth2_token(client: TestClient):
-    """Some routes expect an oauth2 JWT token in the headers"""
+async def test_session(client: TestClient):
+    """Some routes expect a user in the session"""
     routes = [
         ("POST", "/admin", songs[0].dict(), {}),
-        ("PUT", "/admin/english/1", songs[0].dict(), {}),
-        ("DELETE", "/admin/english/1", songs[0].dict(), {}),
+        ("PUT", "/admin/english/90", songs[0].dict(), {}),
+        ("DELETE", "/admin/english/90", songs[0].dict(), {}),
     ]
     with client:
-        auth_headers = _get_oauth2_headers(client, test_user)
-        no_jwt_token_headers = {
-            "csrftoken": auth_headers["csrftoken"],
-            "Content-Type": "application/json",
-        }
-        wrong_jwt_token_headers = {
-            **auth_headers,
-            "Authorization": f"{auth_headers['Authorization'][:-3]}you",
-        }
+        auth_headers = _get_admin_headers(client, test_user)
 
         for song in songs:
             payload = song.dict()
             response = client.post("/admin", json=payload, headers=auth_headers)
             assert response.status_code == 200
 
+        for method, route, body, params in routes:
+            response = client.request(
+                method, url=route, json=body, params=params, headers=auth_headers
+            )
+            assert response.status_code in (200, 404)
+
+        # no session
         try:
-            client.cookies.delete(name="Authorization")
+            client.cookies.delete(name="session")
         except KeyError:
             pass
 
@@ -353,25 +353,28 @@ async def test_oauth2_token(client: TestClient):
                 url=route,
                 json=body,
                 params=params,
-                headers=no_jwt_token_headers,
+                headers=auth_headers,
             )
-            assert response.status_code == 401
-            assert response.json() == {"detail": "Not authenticated"}
+            # redirects to login page
+            assert response.status_code == 200
+            assert response.template.name == "login.html"
+            assert response.url == client.base_url.join("admin/login")
 
+        # wrong session
+        client.cookies.set("session", "some value")
+
+        for method, route, body, params in routes:
             response = client.request(
                 method,
                 url=route,
                 json=body,
                 params=params,
-                headers=wrong_jwt_token_headers,
+                headers=auth_headers,
             )
-            assert response.status_code == 403
-            assert response.json() == {"detail": "AuthenticationError: invalid token"}
-
-            response = client.request(
-                method, url=route, json=body, params=params, headers=auth_headers
-            )
-            assert response.status_code in (200, 404)
+            # redirects to login page
+            assert response.status_code == 200
+            assert response.template.name == "login.html"
+            assert response.url == client.base_url.join("admin/login")
 
 
 @pytest.mark.asyncio
@@ -399,7 +402,7 @@ async def test_rate_limit(client_and_rate):
             assert response.status_code == 200
 
         for method, route, body, params in routes:
-            api.routes.app.state.limiter.reset()
+            api.apps.app.state.limiter.reset()
 
             for _ in range(max_reqs_per_sec):
                 response = client.request(
@@ -440,7 +443,7 @@ def _get_auth_headers(client, user: auth.models.UserDTO):
     """Gets the auth headers to use for the client"""
     return {
         "x-api-key": _get_api_key(client),
-        **_get_oauth2_headers(client, user),
+        **_get_admin_headers(client, user),
     }
 
 
@@ -453,9 +456,7 @@ def _get_api_key(client: TestClient) -> str:
     return data["key"]
 
 
-def _get_oauth2_headers(
-    client: TestClient, user: auth.models.UserDTO
-) -> Dict[str, str]:
+def _get_admin_headers(client: TestClient, user: auth.models.UserDTO) -> Dict[str, str]:
     """Gets the Oauth2 token to use to access the admin part of the API."""
     with client.app.state.auth_service.mail.record_messages() as outbox:
         # visit the login form page to get csrf token
@@ -487,9 +488,8 @@ def _get_oauth2_headers(
     response = client.post("/admin/verify-otp", data=otp_request, headers=headers)
     assert response.status_code == 200
 
-    # return JWT token and csrf token
-    verified_auth = json.loads(client.cookies.get("Authorization"))
-    return {"Authorization": verified_auth, "csrftoken": csrf_token}
+    # return csrf token
+    return {"csrftoken": csrf_token}
 
 
 def _song_key_func(v: Dict[str, Any]) -> str:

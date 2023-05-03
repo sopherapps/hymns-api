@@ -1,5 +1,6 @@
-from starlette.requests import Request
-from starlette.responses import Response, RedirectResponse
+from fastapi.requests import Request
+from fastapi.responses import Response, RedirectResponse
+from fastapi import status
 
 from api.apps.admin.utils import templates
 from api.errors import HTTPAuthenticationError
@@ -9,7 +10,9 @@ from api.utils import to_http_exception_with_link
 async def redirect_unauthenticated_to_login(
     request: Request, exc: HTTPAuthenticationError
 ) -> Response:
-    return RedirectResponse(url=request.url_for("login"))
+    return RedirectResponse(
+        url=request.url_for("login"), status_code=status.HTTP_302_FOUND
+    )
 
 
 async def redirect_to_error_page(request: Request, exc: Exception) -> Response:
