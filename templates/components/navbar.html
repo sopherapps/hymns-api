@@ -4,15 +4,22 @@
                     <span class="ml-3 text-sm">Hymns Admin</span>
                 </a>
                 <nav class="md:ml-auto flex flex-wrap items-center text-sm justify-center">
+
                     {% if request.url|string != url_for('get_admin_home') and user %}
-                    <a class="block mr-5 hover:text-gray-900" href="{{ url_for('get_admin_home') }}">Dashboard</a>
+                        <a class="block mr-5 hover:text-gray-900" href="{{ url_for('get_admin_home') }}">Dashboard</a>
+                    {% endif %}
+
+                    {% if request.url|string != url_for('get_create_song') and user %}
+                        <a class="block mr-5 text-white bg-indigo-500 border-0 py-1 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm" href="{{ url_for('get_create_song') }}">New</a>
                     {% endif %}
 
                     {% if user %}
-                    <form class="h-fit w-fit" method="post" action="{{url_for('logout')}}">
-                        <button class="block mr-5 hover:text-gray-900" type="submit">Logout</button>
-                        <input type="hidden" name="csrftoken" value="{{ request.state.csrftoken }}">
-                    </form>
+                        <form class="h-fit w-fit" method="post" action="{{url_for('logout')}}">
+                            <button class="block mr-5 hover:text-gray-900" type="submit">Logout</button>
+                            <input type="hidden" name="csrftoken" value="{{ request.state.csrftoken }}">
+                        </form>
+                    {% else %}
+                        <a class="block mr-5 hover:text-gray-900" href="{{ url_for('get_login') }}">Login</a>
                     {% endif %}
 
                     <a
