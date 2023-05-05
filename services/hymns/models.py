@@ -7,7 +7,7 @@ from services.types import MusicalNote
 
 
 class LineSection(BaseModel):
-    note: MusicalNote
+    note: Optional[MusicalNote]
     words: str
 
 

@@ -42,16 +42,17 @@
                             </div>
                             <div class="w-full">
                                 <div class="relative">
-                                    <label for="song-key" class="leading-5 text-xs text-gray-600">Key</label>
-                                    <select id="song-key" name="key"
-                                        class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out"
-                                        name="key" placeholder="key">
+                                    <label for="key" class="leading-5 text-xs text-gray-600">Key</label>
+                                    <select id="key" name="key"
+                                        class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out" placeholder="key">
                                         {% for name, value in notes.items() %}
                                             <option value="{{value}}" {% if song.key.value == value %}selected {% endif %}>{{name}}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
                             </div>
+
+                            <input id="csrftoken" type="hidden" name="csrftoken" value="{{ request.state.csrftoken }}" />
 
                             <button disabled
                                 class="mt-5 w-full text-white disabled:bg-gray-200  active:bg-indigo-500 border-0 py-1 px-3 focus:outline-none active:hover:bg-indigo-600 rounded text-sm">Save</button>

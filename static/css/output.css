@@ -550,6 +550,10 @@ video {
   }
 }
 
+.static {
+  position: static;
+}
+
 .fixed {
   position: fixed;
 }
@@ -580,11 +584,6 @@ video {
 
 .-m-2 {
   margin: -0.5rem;
-}
-
-.mx-2 {
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
 }
 
 .mx-auto {
@@ -1046,6 +1045,10 @@ video {
 
 a {
   cursor: pointer;
+}
+
+div.custom-editor > div > span:first-child {
+  margin-left: 0 !important;
 }
 
 .before\:absolute::before {

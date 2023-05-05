@@ -18,3 +18,7 @@
 a {
   cursor: pointer;
 }
+
+div.custom-editor > div > span:first-child {
+    margin-left: 0 !important;
+}

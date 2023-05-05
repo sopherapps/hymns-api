@@ -32,11 +32,11 @@ class MusicalNote(str, Enum):
     def set(cls) -> Dict[str, str]:
         """Returns the complete set of the members as a map"""
         return {
-            _normalize_musical_note_name(name): cls.__members__[name]
+            _normalize_musical_note_name(name): cls.__members__[name].value
             for name in cls.__members__
         }
 
 
 def _normalize_musical_note_name(note_name: str) -> str:
     """Converts the name of the musical note name to a human-friendly alternative"""
-    return note_name.replace("_", " ").replace("SHARP", "#").capitalize()
+    return note_name.replace("_", " ").replace(" SHARP", "#").capitalize()

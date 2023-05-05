@@ -112,7 +112,6 @@
             // within the editor is made
             document.dispatchEvent(new Event("close-toolbar"));
         }
-
     }
 
     function getSelection() {
@@ -120,7 +119,7 @@
 
         const selectionString = selection?.toString();
         if (selectionString) {
-            return { selectionString: selection.toString(), ...getCaretCoordinates(selection) };
+            return {selectionString: selection.toString(), ...getCaretCoordinates(selection)};
         }
     }
 
@@ -136,7 +135,7 @@
                 y = rect.top;
             }
         }
-        return { x, y };
+        return {x, y};
     }
 
     function createContentEditable(textarea, uniqueId) {
@@ -147,9 +146,10 @@
         div.id = uniqueId;
         div.innerHTML = textarea.value;
 
-        textarea.setAttribute('custom-editor-textarea-id', uniqueId);
-        div.setAttribute('contentEditable', true);
-        div.setAttribute('spellcheck', false);
+        textarea.setAttribute('custom-editor-editable-div-id', uniqueId);
+        textarea.dataset.value = [];
+        div.setAttribute('contentEditable', "true");
+        div.setAttribute('spellcheck', "false");
 
         // re-create all attributes from the textearea to the new created div
         for (var i = 0, n = atts.length; i < n; i++) {
@@ -163,5 +163,119 @@
 
         return div;
     }
-
 })();
+
+/**
+ * Sends the create-song request
+ */
+function createSong() {
+    const csrftoken = document.getElementById("csrftoken").value;
+    const number = document.getElementById("number").value;
+    const language = document.getElementById("language").value;
+    const title = document.getElementById("title").value;
+    const key = document.getElementById("key").value;
+    const linesElement = document.getElementById("lines");
+    const lines = extractLines(linesElement);
+    const song = {number, language, title, key, lines};
+    const errors = get_errors_in_song(song)
+    if (errors) {
+        alert(errors);
+    } else {
+        fetch("/admin/", {
+            method: "POST",
+            headers: {"Content-Type": "application/json", csrftoken},
+            body: JSON.stringify(song),
+            redirect: "follow",
+        }).then(resp => {
+            if (resp.ok && resp.redirected) {
+                window.location.replace(resp.url);
+            } else {
+                resp.text().then(text => alert(text)).catch(() => alert(JSON.stringify(resp)));
+            }
+        }).catch(err => {
+            alert(err);
+        });
+    }
+}
+
+/**
+ * Gets the errors in a given song object
+ * @param song {{number: string, language: string, title: string, key: string, lines: {note: string, words: string}[][]}}
+ * @return {string}
+ */
+function get_errors_in_song(song) {
+    let errors = "";
+    if (!song.number) {
+        errors += "song number is required.\n";
+    }
+    if (!song.language) {
+        errors += "song language is required.\n";
+    }
+    if (!song.title) {
+        errors += "song title is required.\n";
+    }
+    if (!song.key) {
+        errors += "song key is required.\n";
+    }
+    if (!song.lines) {
+        errors += "song lines is required.\n";
+    }
+    return errors;
+}
+
+/**
+ * Extracts an array of song lines from a content editable div or from a text area
+ * @param editableElement {HTMLDivElement | HTMLTextAreaElement}
+ * @return {{note: string, words: string}[][]}
+ */
+function extractLines(editableElement) {
+    let editableDiv = editableElement;
+    if (editableElement.tagName === "TEXTAREA") {
+        const associatedDivId = editableElement.getAttribute('custom-editor-editable-div-id');
+        editableDiv = document.getElementById(associatedDivId);
+    }
+
+    const innerDivs = [...editableDiv.getElementsByTagName("div")];
+
+    const firstLineUpperBound = editableDiv.innerHTML.indexOf("<div>");
+    if (firstLineUpperBound > 0) {
+        const firstDiv = document.createElement("div");
+        firstDiv.innerHTML = editableDiv.innerHTML.slice(0, firstLineUpperBound);
+        innerDivs.unshift(firstDiv)
+    }
+
+    return innerDivs.map(extractLine);
+}
+
+/**
+ * Extracts an array of line sections from a div that represents a line in a song
+ * @param lineDiv {HTMLDivElement}
+ * @return {{note: string, words: string}[]}
+ */
+function extractLine(lineDiv) {
+    const sups = [...lineDiv.getElementsByTagName("sup")];
+    const lineSections = sups.map(extractLineSection);
+
+    const firstNode = lineDiv.firstChild;
+    if (firstNode?.nodeType === Node.TEXT_NODE) {
+        lineSections.unshift({note: null, words: firstNode.textContent})
+    }
+
+    const lastNode = lineDiv.lastChild;
+    if (lastNode?.nodeType === Node.TEXT_NODE) {
+        lineSections.push({note: null, words: lastNode.textContent})
+    }
+
+    return lineSections;
+}
+
+/**
+ * Extracts a line section from a <sup> (and its next sibling)
+ * @param lineSectionSup {HTMLElement}
+ * @return {{note: string, words: string}}
+ */
+function extractLineSection(lineSectionSup) {
+    const note = lineSectionSup.textContent;
+    const words = lineSectionSup.nextElementSibling?.textContent || "";
+    return {note, words}
+}
