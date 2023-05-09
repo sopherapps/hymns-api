@@ -15,10 +15,21 @@
   top: -1em;
 }
 
+.sup-tone-marker {
+  font-size: 1em;
+  display: inline-block;
+  vertical-align: text-bottom;
+}
+
+.sup-tone-marker > span:first-child {
+  font-weight: bold;
+}
+
 a {
   cursor: pointer;
 }
 
-div.custom-editor > div > span:first-child {
+div.custom-editor > div > span:first-child,
+div.prefilled-custom-editor > div > span:first-child{
     margin-left: 0 !important;
 }

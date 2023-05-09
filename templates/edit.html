@@ -9,18 +9,26 @@
                         <div class="w-full pb-5">
                             <div class="relative">
                                 <textarea id="title" name="title" placeholder="Title" rows="1" wrap="soft"
-                                    class="w-full auto-grow bg-inherit text-3xl outline-none text-gray-700 py-1 pr-5 leading-8 resize-none transition-colors duration-200 ease-in-out">We Love God</textarea>
+                                    class="w-full auto-grow bg-inherit text-3xl outline-none text-gray-700 py-1 pr-5 leading-8 resize-none transition-colors duration-200 ease-in-out">{{song.title}}</textarea>
                             </div>
                         </div>
                         <div class="relative">
                             <div contenteditable spellcheck="false" id="lines" name="lines" placeholder="Lyrics..."
                                 class="prefilled-custom-editor w-full bg-inherit text-lg outline-none text-gray-700 py-1 pr-5 leading-[3rem] transition-colors duration-200 ease-in-out">
-                                The&nbsp;<sup class="tone-marker">C</sup><span style="margin-left: -0.75em;">book is
-                                    here</span>
-                                <div>Yes&nbsp;<sup class="tone-marker">Cm</sup><span style="margin-left: -1.5em;">it
-                                        is here</span></div>
-                                <div>Good i<sup class="tone-marker">C#m</sup><span style="margin-left: -2.25em;">t
-                                        is here</span></div>
+                                {%- for line in song.lines -%}
+                                    <div>
+                                        {%- for section in line -%}
+                                            {%- if section.note -%}
+                                                <sup class="tone-marker">{{section.note.value}}</sup>
+                                                {%- with left_margin=-0.75*(section.note.value|length) -%}
+                                                    <span style="margin-left: {{left_margin}}em;">{{section.words}}</span>
+                                                {% endwith %}
+                                            {%- else -%}
+                                                {{section.words}}
+                                            {%- endif -%}
+                                        {%- endfor -%}
+                                    </div>
+                                {%- endfor -%}
                             </div>
                         </div>
                     </div>
@@ -28,16 +36,16 @@
                         <div class="flex flex-wrap -m-2">
                             <div class="w-full">
                                 <div class="relative">
-                                    <label for="number" class="leading-5 text-xs text-gray-600">Song Number</label>
-                                    <input type="number" id="number" name="number" value="150"
-                                        class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out">
+                                    <label for="number" class="leading-5 text-xs text-gray-600">Song Number (uneditable)</label>
+                                    <input disabled aria-disabled type="number" id="number" name="number" value="{{song.number}}"
+                                        class="w-full bg-gray-100 bg-opacity-50 rounded text-xs outline-none text-gray-700 py-1 px-3 leading-5">
                                 </div>
                             </div>
                             <div class="w-full">
                                 <div class="relative">
-                                    <label for="language" class="leading-5 text-xs text-gray-600">Language</label>
-                                    <input type="text" id="language" name="language" value="english"
-                                        class="w-full bg-gray-100 bg-opacity-50 rounded border-b border-gray-300 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out">
+                                    <label for="language" class="leading-5 text-xs text-gray-600">Language (uneditable)</label>
+                                    <input disabled aria-disabled type="text" id="language" name="language" value="{{song.language}}"
+                                        class="w-full bg-gray-100 bg-opacity-50 rounded  text-xs outline-none text-gray-700 py-1 px-3 leading-5">
                                 </div>
                             </div>
                             <div class="w-full">
@@ -54,8 +62,8 @@
 
                             <input id="csrftoken" type="hidden" name="csrftoken" value="{{ request.state.csrftoken }}" />
 
-                            <button disabled
-                                class="mt-5 w-full text-white disabled:bg-gray-200  active:bg-indigo-500 border-0 py-1 px-3 focus:outline-none active:hover:bg-indigo-600 rounded text-sm">Save</button>
+                            <button
+                                class="mt-5 w-full text-white bg-indigo-500 border-0 py-1 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm" onclick="updateSong()">Save</button>
 
                         </div>
                     </div>
@@ -67,21 +75,16 @@
 
 
 {% block root_extras %}
-    <div id="tone-selector-modal"
+<div id="tone-selector-modal"
         class="hidden absolute bg-gray-900 border px-5 py-3 rounded before:content-[''] before:absolute before:bg-inherit before:w-[5%] before:h-4 before:top-[75%] before:left-[45%] before:z-2 before:skew-y-[45deg] after:content-[''] after:absolute after:bg-inherit after:w-[5%] after:h-4 after:top-[75%] after:left-[50%] after:z-2 after:-skew-y-[45deg]"
         style="bottom: 50%; left: 50%;">
         <select
             class="w-full bg-gray-100 rounded border-0 relative z-10 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 text-xs outline-none text-gray-700 py-1 px-3 leading-5 transition-colors duration-200 ease-in-out"
             id="tone-selector">
             <option value="" selected disabled hidden>Choose tone</option>
-            <option value="C">C major</option>
-            <option value="Cm">C minor</option>
-            <option value="C#">C# major</option>
-            <option value="C#m">C# minor</option>
-            <option value="D">D major</option>
-            <option value="Dm">D minor</option>
-            <option value="D#">D major</option>
-            <option value="D#m">D minor</option>
+            {% for name, value in notes.items() %}
+                <option value="{{value}}">{{name}}</option>
+            {% endfor %}
         </select>
     </div>
 

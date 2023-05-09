@@ -1043,11 +1043,22 @@ video {
   top: -1em;
 }
 
+.sup-tone-marker {
+  font-size: 1em;
+  display: inline-block;
+  vertical-align: text-bottom;
+}
+
+.sup-tone-marker > span:first-child {
+  font-weight: bold;
+}
+
 a {
   cursor: pointer;
 }
 
-div.custom-editor > div > span:first-child {
+div.custom-editor > div > span:first-child,
+div.prefilled-custom-editor > div > span:first-child{
   margin-left: 0 !important;
 }
 
@@ -1199,11 +1210,6 @@ div.custom-editor > div > span:first-child {
   --tw-ring-color: rgb(199 210 254 / var(--tw-ring-opacity));
 }
 
-.active\:bg-indigo-500:active {
-  --tw-bg-opacity: 1;
-  background-color: rgb(99 102 241 / var(--tw-bg-opacity));
-}
-
 .active\:text-indigo-700:active {
   --tw-text-opacity: 1;
   color: rgb(67 56 202 / var(--tw-text-opacity));
@@ -1212,16 +1218,6 @@ div.custom-editor > div > span:first-child {
 .active\:text-red-700:active {
   --tw-text-opacity: 1;
   color: rgb(185 28 28 / var(--tw-text-opacity));
-}
-
-.active\:hover\:bg-indigo-600:hover:active {
-  --tw-bg-opacity: 1;
-  background-color: rgb(79 70 229 / var(--tw-bg-opacity));
-}
-
-.disabled\:bg-gray-200:disabled {
-  --tw-bg-opacity: 1;
-  background-color: rgb(229 231 235 / var(--tw-bg-opacity));
 }
 
 @media (min-width: 640px) {

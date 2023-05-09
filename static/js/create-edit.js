@@ -166,18 +166,12 @@
 })();
 
 /**
- * Sends the create-song request
+ * Attempts to create a given song
  */
 function createSong() {
     const csrftoken = document.getElementById("csrftoken").value;
-    const number = document.getElementById("number").value;
-    const language = document.getElementById("language").value;
-    const title = document.getElementById("title").value;
-    const key = document.getElementById("key").value;
-    const linesElement = document.getElementById("lines");
-    const lines = extractLines(linesElement);
-    const song = {number, language, title, key, lines};
-    const errors = get_errors_in_song(song)
+    const song = extractSong();
+    const errors = get_errors_in_song(song);
     if (errors) {
         alert(errors);
     } else {
@@ -196,6 +190,49 @@ function createSong() {
             alert(err);
         });
     }
+}
+
+/**
+ * Attempts to update a given song
+ */
+function updateSong() {
+    const csrftoken = document.getElementById("csrftoken").value;
+    const song = extractSong();
+    console.log(song)
+    const errors = get_errors_in_song(song)
+    if (errors) {
+        alert(errors);
+    } else {
+        fetch(`/admin/${song.language}/${song.number}`, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json", csrftoken},
+            body: JSON.stringify(song),
+            redirect: "follow",
+        }).then(resp => {
+            if (resp.ok) {
+                console.log(resp);
+                alert("Successfully Saved");
+            } else {
+                resp.text().then(text => alert(text)).catch(() => alert(JSON.stringify(resp)));
+            }
+        }).catch(err => {
+            alert(err);
+        });
+    }
+}
+
+/**
+ * Extract the song being edited or created from the document
+ * @return {{number, language, title, lines: {note: string, words: string}[][], key}}
+ */
+function extractSong() {
+    const number = parseInt(document.getElementById("number").value);
+    const language = document.getElementById("language").value;
+    const title = document.getElementById("title").value;
+    const key = document.getElementById("key").value;
+    const linesElement = document.getElementById("lines");
+    const lines = extractLines(linesElement);
+    return {number, language, title, key, lines};
 }
 
 /**
@@ -257,12 +294,12 @@ function extractLine(lineDiv) {
     const lineSections = sups.map(extractLineSection);
 
     const firstNode = lineDiv.firstChild;
-    if (firstNode?.nodeType === Node.TEXT_NODE) {
+    if (firstNode?.nodeType === Node.TEXT_NODE || firstNode?.nodeName === "SPAN") {
         lineSections.unshift({note: null, words: firstNode.textContent})
     }
 
     const lastNode = lineDiv.lastChild;
-    if (lastNode?.nodeType === Node.TEXT_NODE) {
+    if (lastNode?.nodeType === Node.TEXT_NODE && lastNode !== firstNode) {
         lineSections.push({note: null, words: lastNode.textContent})
     }
 
